@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "video-capture",
+  "version": "0.1.0",
+  "description": "Record your screen with a camera bubble. Open source alternative to Loom.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "desktopCapture",
+    "offscreen",
+    "downloads"
+  ],
+  "action": {
+    "default_title": "Start a recording"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["bubble.html", "bubble.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

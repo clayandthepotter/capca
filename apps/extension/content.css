@@ -1,0 +1,57 @@
+#__vc_root .vc-bubble {
+  position: fixed;
+  left: 24px;
+  bottom: 24px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  z-index: 2147483646;
+  cursor: grab;
+  background: #18181b;
+}
+
+#__vc_root .vc-bubble-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  pointer-events: none;
+}
+
+#__vc_root .vc-bar {
+  position: fixed;
+  left: 24px;
+  bottom: 216px;
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 12px;
+  background: rgba(24, 24, 27, 0.95);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  z-index: 2147483647;
+  cursor: grab;
+  font-family: system-ui, sans-serif;
+}
+
+#__vc_root .vc-btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #3f3f46;
+  color: #fafafa;
+}
+
+#__vc_root .vc-btn-record {
+  background: #10b981;
+  color: #09090b;
+}
+
+#__vc_root .vc-btn-stop {
+  background: #ef4444;
+  color: #fff;
+}
