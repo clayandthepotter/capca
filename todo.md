@@ -26,8 +26,11 @@ Updated: 2026-07-08
 
 ## Done
 
+- [x] Fixed the extension startup bug where every tab mounted the camera bubble
+  and showed Chrome's recording indicator before the user started recording.
+- [x] Added the missing extension `popup.html` target referenced by
+  `manifest.json`.
 - [x] Reviewed the local repo shape and existing Cap architecture notes.
 - [x] Compared the current product direction against Cap, Loom, and Bluedot.
 - [x] Captured the recommended product positioning and roadmap in
   `docs/PRODUCT_STRATEGY.md`.
-

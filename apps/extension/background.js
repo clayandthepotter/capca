@@ -1,97 +1,171 @@
-// Service worker: orchestrates capture and upload. UI lives in the content
-// script; recording happens in the offscreen document (no DOM/media APIs here).
+// Service worker — orchestration only, following Cap's architecture:
+// the offscreen document owns capture/recording and is the source of truth;
+// the SW relays commands, tracks a status state machine mirrored to
+// chrome.storage.session, and broadcasts changes to every surface (popup +
+// the recording bar in all tabs). MV3 SWs die at will, so anything here can
+// be rebuilt from storage + the offscreen document at any time.
 
-// Where to try uploading finished recordings (first one that has a session wins).
 const API_BASES = ["http://localhost:3000", "https://capca-cam.vercel.app"];
+const STATUS_KEY = "capca:status";
 
-let recordingTabId = null;
+// status: { phase: "idle"|"creating"|"recording"|"paused"|"uploading"|"error",
+//           startedAt?, pausedMs?, error?, shareUrl? }
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab.id) return;
-  // Don't gate on tab.url — it's only populated for origins we hold host
-  // permissions on. activeTab grants injection rights on whatever tab was
-  // clicked; restricted pages (chrome://, Web Store) just throw, so catch.
-  try {
-    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["content.css"] });
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-  } catch {
-    // page doesn't allow extension scripts — nothing to do
+async function getStatus() {
+  const store = await chrome.storage.session.get(STATUS_KEY);
+  return store[STATUS_KEY] ?? { phase: "idle" };
+}
+
+async function setStatus(status) {
+  await chrome.storage.session.set({ [STATUS_KEY]: status });
+  chrome.runtime.sendMessage({ type: "vc:status", status }).catch(() => {});
+  const tabs = await chrome.tabs.query({});
+  for (const tab of tabs) {
+    if (tab.id != null) {
+      chrome.tabs.sendMessage(tab.id, { type: "vc:status", status }).catch(() => {});
+    }
   }
-});
+  const badge =
+    status.phase === "recording" ? "REC" : status.phase === "paused" ? "II" : "";
+  chrome.action.setBadgeBackgroundColor({ color: "#ef4444" }).catch(() => {});
+  chrome.action.setBadgeText({ text: badge }).catch(() => {});
+}
+
+async function hasOffscreen() {
+  return (await chrome.offscreen.hasDocument?.()) ?? false;
+}
 
 async function ensureOffscreen() {
-  // Always start from a fresh offscreen document so no state (or stale code
-  // from a previous extension version) leaks between recordings.
-  if (await chrome.offscreen.hasDocument?.()) {
-    await chrome.offscreen.closeDocument().catch(() => {});
-  }
+  if (await hasOffscreen()) return;
   await chrome.offscreen.createDocument({
     url: "offscreen.html",
     reasons: ["USER_MEDIA", "DISPLAY_MEDIA"],
-    justification: "Record the selected screen with MediaRecorder",
+    justification: "Record the selected screen, tab, or camera with MediaRecorder",
   });
 }
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
-  switch (msg.type) {
-    case "vc:start-recording": {
-      recordingTabId = sender.tab?.id ?? null;
-      console.log("[capca] start requested from tab", recordingTabId);
-      try {
-        // NOTE: no targetTab argument — passing one binds the streamId to that
-        // tab's origin, and consuming it from the offscreen document then fails
-        // with "Error starting tab capture". Omitting it issues the streamId to
-        // the extension itself, which is what the offscreen recorder needs.
-        chrome.desktopCapture.chooseDesktopMedia(
-          ["screen", "window", "tab", "audio"],
-          async (streamId, options) => {
-            console.log("[capca] picker result:", streamId ? "granted" : "cancelled");
-            if (!streamId) {
-              notifyTab({ type: "vc:recording-cancelled" });
-              return;
-            }
-            await ensureOffscreen();
-            chrome.runtime.sendMessage({
-              type: "vc:offscreen-start",
-              streamId,
-              withMic: msg.withMic,
-              withSystemAudio: options?.canRequestAudioTrack ?? false,
-            });
-          }
-        );
-      } catch (err) {
-        console.error("[capca] chooseDesktopMedia failed:", err);
-        notifyTab({ type: "vc:recording-error", error: `open picker: ${err.message}` });
-      }
-      break;
+/** On SW restart the in-memory state is gone — resync from ground truth. */
+async function syncStatus() {
+  const status = await getStatus();
+  if (!(await hasOffscreen())) {
+    if (status.phase !== "idle" && status.phase !== "error") {
+      await setStatus({ phase: "idle" });
+      return { phase: "idle" };
     }
+    return status;
+  }
+  try {
+    const real = await chrome.runtime.sendMessage({ type: "vc:offscreen-get-status" });
+    if (real?.status && real.status.phase !== status.phase) {
+      await setStatus(real.status);
+      return real.status;
+    }
+  } catch {}
+  return status;
+}
+
+async function showControls(tabId, status) {
+  if (tabId == null) return;
+  try {
+    await chrome.tabs.sendMessage(tabId, { type: "vc:show-controls", status });
+  } catch {
+    try {
+      await chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ["content.css"],
+      });
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["content.js"],
+      });
+      await chrome.tabs.sendMessage(tabId, { type: "vc:show-controls", status });
+    } catch {}
+  }
+}
+
+async function startRecording({
+  mode = "fullscreen",
+  withMic = true,
+  withCamera = true,
+} = {}) {
+  await setStatus({ phase: "creating", mode, withCamera });
+
+  let tabStreamId;
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  await showControls(activeTab?.id, { phase: "creating", mode, withCamera });
+  if (mode === "tab") {
+    if (activeTab?.id == null) {
+      await setStatus({ phase: "error", error: "No active tab to record" });
+      return;
+    }
+    tabStreamId = await new Promise((resolve) =>
+      chrome.tabCapture.getMediaStreamId({ targetTabId: activeTab.id }, (id) =>
+        resolve(id),
+      ),
+    );
+    if (!tabStreamId) {
+      await setStatus({ phase: "error", error: "Tab capture was not granted" });
+      return;
+    }
+  }
+
+  await ensureOffscreen();
+  chrome.runtime.sendMessage({
+    type: "vc:offscreen-start",
+    mode,
+    withMic,
+    tabStreamId,
+  });
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  switch (msg.type) {
+    // ---- commands from popup / recording bar ----
+    case "vc:start-recording":
+      void startRecording(msg);
+      sendResponse({ ok: true });
+      break;
     case "vc:stop-recording":
     case "vc:pause-recording":
     case "vc:resume-recording":
-    case "vc:set-mic": {
-      // relay control messages to the offscreen document
-      chrome.runtime.sendMessage({ ...msg, type: msg.type.replace("vc:", "vc:offscreen-") });
+    case "vc:set-mic":
+      chrome.runtime
+        .sendMessage({ ...msg, type: msg.type.replace("vc:", "vc:offscreen-") })
+        .catch(() => {});
+      sendResponse({ ok: true });
       break;
-    }
+    case "vc:get-status":
+      void syncStatus().then((status) => sendResponse({ status }));
+      return true; // async response
+
+    // ---- events from the offscreen recorder ----
     case "vc:recording-started":
-    case "vc:recording-paused":
-    case "vc:recording-resumed":
-    case "vc:recording-error": {
-      notifyTab(msg);
+      void setStatus({ phase: "recording", startedAt: Date.now() });
       break;
-    }
-    case "vc:recording-complete": {
+    case "vc:recording-paused":
+      void getStatus().then((s) => setStatus({ ...s, phase: "paused" }));
+      break;
+    case "vc:recording-resumed":
+      void getStatus().then((s) => setStatus({ ...s, phase: "recording" }));
+      break;
+    case "vc:recording-cancelled":
+      void setStatus({ phase: "idle" });
+      break;
+    case "vc:recording-error":
+      void setStatus({ phase: "error", error: msg.error });
+      break;
+    case "vc:recording-complete":
       void handleRecordingComplete(msg);
       break;
-    }
   }
 });
 
-/** Try uploading to the Capca API (uses the browser session cookie). Falls back to download. */
-async function handleRecordingComplete({ blobUrl, mimeType }) {
-  notifyTab({ type: "vc:upload-started" });
+/** Upload to the Capca API (browser session cookie), fall back to download. */
+async function handleRecordingComplete({ blobUrl, mimeType, durationSec }) {
+  await setStatus({ phase: "uploading" });
   try {
     const blob = await fetch(blobUrl).then((r) => r.blob());
+    const ext = (mimeType || "").includes("mp4") ? "mp4" : "webm";
 
     for (const base of API_BASES) {
       try {
@@ -104,7 +178,6 @@ async function handleRecordingComplete({ blobUrl, mimeType }) {
             mimeType: mimeType || "video/webm",
           }),
         });
-        if (create.status === 401) continue; // not signed in here — try next base
         if (!create.ok) continue;
 
         const { id, uploadUrl, shareUrl } = await create.json();
@@ -119,32 +192,37 @@ async function handleRecordingComplete({ blobUrl, mimeType }) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ sizeBytes: blob.size }),
+          body: JSON.stringify({ sizeBytes: blob.size, durationSec }),
         });
 
         const absolute = `${base}${shareUrl}`;
-        notifyTab({ type: "vc:upload-complete", shareUrl: absolute });
+        await setStatus({ phase: "idle", shareUrl: absolute });
         chrome.tabs.create({ url: absolute });
+        await teardownOffscreen();
         return;
-      } catch {
-        // network error against this base — try the next one
+      } catch (err) {
+        console.warn("[capca] upload attempt failed for", base, err);
       }
     }
 
     // No session anywhere — keep the recording locally.
-    notifyTab({ type: "vc:upload-skipped" });
     await chrome.downloads.download({
       url: blobUrl,
-      filename: `capca-recording-${Date.now()}.webm`,
+      filename: `capca-recording-${Date.now()}.${ext}`,
       saveAs: true,
     });
+    await setStatus({ phase: "idle", savedLocally: true });
+    await teardownOffscreen();
   } catch (err) {
-    notifyTab({ type: "vc:recording-error", error: String(err) });
+    await setStatus({ phase: "error", error: `upload: ${err.message}` });
   }
 }
 
-function notifyTab(msg) {
-  if (recordingTabId != null) {
-    chrome.tabs.sendMessage(recordingTabId, msg).catch(() => {});
+async function teardownOffscreen() {
+  if (await hasOffscreen()) {
+    await chrome.offscreen.closeDocument().catch(() => {});
   }
 }
+
+// Ground-truth resync whenever the SW wakes up.
+void syncStatus();

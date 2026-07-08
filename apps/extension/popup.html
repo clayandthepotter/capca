@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Capca</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="logo"><span></span></span>
+        <div>
+          <h1>Capca</h1>
+          <p id="status">Ready to record</p>
+        </div>
+      </header>
+
+      <label class="field">
+        <span>Capture</span>
+        <select id="mode">
+          <option value="fullscreen">Screen or window</option>
+          <option value="tab">Current tab</option>
+          <option value="camera">Camera only</option>
+        </select>
+      </label>
+
+      <label class="check">
+        <input id="mic" type="checkbox" checked />
+        <span>Microphone</span>
+      </label>
+
+      <label class="check">
+        <input id="camera" type="checkbox" checked />
+        <span>Show camera bubble on page</span>
+      </label>
+
+      <div class="actions">
+        <button id="primary" type="button">Start recording</button>
+        <button id="open-controls" type="button">Show controls</button>
+      </div>
+
+      <p id="message" role="status"></p>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

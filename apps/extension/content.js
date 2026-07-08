@@ -1,14 +1,22 @@
-// Injected on toolbar click. Renders the draggable camera bubble (an iframe on
-// the extension origin, so camera permission is granted once for the extension
-// rather than per-site) plus a control bar. Because the bubble is real page
-// DOM, the screen capture records it — no compositing needed.
+// Preloaded on normal web pages so the background/popup can show controls on
+// demand. It must stay passive on page load: mounting the bubble creates a
+// camera iframe, which makes Chrome mark every tab as recording.
 
 (() => {
-  const existing = document.getElementById("__vc_root");
-  if (existing) {
-    existing.remove(); // toolbar click toggles the UI off
-    return;
+  if (window.__capcaContentLoaded) return;
+  window.__capcaContentLoaded = true;
+
+  let mounted = false;
+
+  function removeControls() {
+    document.getElementById("__vc_root")?.remove();
+    mounted = false;
   }
+
+  function mountControls(initialStatus = null) {
+    const existing = document.getElementById("__vc_root");
+    if (existing) return;
+    mounted = true;
 
   const SVG = {
     record: '<svg viewBox="0 0 24 24" width="14" height="14"><circle cx="12" cy="12" r="7" fill="currentColor"/></svg>',
@@ -23,6 +31,8 @@
   };
 
   let state = "idle"; // idle | starting | recording | paused | uploading
+  let lastShareUrl = null;
+  let savedLocally = false;
   let micOn = true;
   let camOn = true;
   let seconds = 0;
@@ -125,7 +135,12 @@
     if (state === "idle") {
       state = "starting";
       render();
-      chrome.runtime.sendMessage({ type: "vc:start-recording", withMic: micOn });
+      chrome.runtime.sendMessage({
+        type: "vc:start-recording",
+        mode: "fullscreen",
+        withMic: micOn,
+        withCamera: camOn,
+      });
     } else if (state === "recording" || state === "paused") {
       clearInterval(timerId);
       chrome.runtime.sendMessage({ type: "vc:stop-recording" });
@@ -163,8 +178,56 @@
     root.remove();
   });
 
+  function applyStatus(status) {
+    const previousState = state;
+    lastShareUrl = status.shareUrl ?? lastShareUrl;
+    savedLocally = Boolean(status.savedLocally);
+
+    switch (status.phase) {
+      case "creating":
+        state = "starting";
+        break;
+      case "recording":
+        if (state !== "recording") {
+          seconds = status.startedAt
+            ? Math.max(0, Math.floor((Date.now() - status.startedAt) / 1000))
+            : 0;
+          startTimer();
+        }
+        state = "recording";
+        break;
+      case "paused":
+        state = "paused";
+        clearInterval(timerId);
+        break;
+      case "uploading":
+        state = "uploading";
+        clearInterval(timerId);
+        break;
+      case "error":
+        state = "idle";
+        clearInterval(timerId);
+        if (status.error) toast(`Recording error: ${status.error}`, true);
+        break;
+      default:
+        state = "idle";
+        clearInterval(timerId);
+        if (previousState === "uploading" && lastShareUrl) {
+          toast("Link ready — opened in a new tab");
+        } else if (previousState === "uploading" && savedLocally) {
+          toast("Not signed in to Capca — saved as download instead");
+        }
+        break;
+    }
+
+    render();
+  }
+
   chrome.runtime.onMessage.addListener(async (msg) => {
     switch (msg.type) {
+      case "vc:status":
+        applyStatus(msg.status);
+        break;
       case "vc:recording-started":
         await runCountdown();
         state = "recording";
@@ -242,4 +305,27 @@
   }
 
   render();
+  if (initialStatus) applyStatus(initialStatus);
+  }
+
+  chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+    if (msg.type === "vc:show-controls") {
+      mountControls(msg.status ?? null);
+      sendResponse?.({ ok: true });
+      return;
+    }
+    if (msg.type === "vc:hide-controls") {
+      removeControls();
+      sendResponse?.({ ok: true });
+      return;
+    }
+    if (msg.type === "vc:status" && mounted) {
+      mountControls(msg.status);
+    }
+  });
+
+  chrome.runtime.sendMessage({ type: "vc:get-status" }, (response) => {
+    const status = response?.status;
+    if (status && status.phase !== "idle") mountControls(status);
+  });
 })();

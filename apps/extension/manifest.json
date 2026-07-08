@@ -1,27 +1,33 @@
 {
   "manifest_version": 3,
   "name": "Capca — Screen Recorder",
-  "version": "0.2.0",
-  "description": "Record your screen with a camera bubble and share with a link. Open source alternative to Loom.",
+  "version": "0.3.0",
+  "minimum_chrome_version": "116",
+  "description": "Record your screen, tab, or camera with a presenter bubble and share a link the moment you stop. Open source.",
   "permissions": [
-    "activeTab",
-    "scripting",
-    "desktopCapture",
     "offscreen",
+    "scripting",
+    "storage",
+    "activeTab",
+    "tabCapture",
     "downloads"
   ],
-  "host_permissions": [
-    "http://localhost:3000/*",
-    "http://localhost:9000/*",
-    "https://capca-cam.vercel.app/*",
-    "https://*.r2.cloudflarestorage.com/*"
-  ],
+  "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
-    "default_title": "Start a Capca recording"
+    "default_title": "Record with Capca",
+    "default_popup": "popup.html"
   },
   "background": {
     "service_worker": "background.js"
   },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
   "web_accessible_resources": [
     {
       "resources": ["bubble.html", "bubble.js"],

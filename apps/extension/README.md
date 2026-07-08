@@ -13,21 +13,23 @@ otherwise it saves as a download.
 1. `chrome://extensions` → enable **Developer mode**
 2. **Load unpacked** → select this folder (`apps/extension`)
 3. Pin the extension and click it on any normal page (not `chrome://` pages)
+4. Choose a capture mode in the popup and start recording
 
 ## How it works
 
-- **background.js** — service worker. Injects the UI, runs
-  `chrome.desktopCapture.chooseDesktopMedia` (screen picker), creates the
-  offscreen document, downloads the finished file.
-- **content.js / content.css** — draggable camera bubble + control bar injected
-  into the page. The bubble is page DOM, so the screen capture records it —
-  that's the whole compositing story (same trick Loom uses).
+- **popup.html / popup.js / popup.css** — the toolbar popup. Lets the user pick
+  capture mode and start/stop recording without injecting UI on every tab.
+- **background.js** — service worker. Coordinates the popup, page controls, and
+  offscreen recorder; it also owns the extension status badge.
+- **content.js / content.css** — passive page script until the popup/background
+  asks it to show the draggable camera bubble + control bar. The bubble is page
+  DOM, so tab/page captures can record it without server-side compositing.
 - **bubble.html / bubble.js** — the camera view inside the bubble. It's an
   iframe on the extension origin so camera+mic permission is granted once for
   the extension instead of per-site.
 - **offscreen.html / offscreen.js** — MediaRecorder lives here (MV3 service
-  workers have no DOM/media APIs). Mixes desktop audio + mic, records WebM,
-  returns a blob URL.
+  workers have no DOM/media APIs). Mixes display/tab audio + mic, records MP4
+  when Chrome supports it and WebM as fallback, then returns a blob URL.
 
 ## Known gaps
 
