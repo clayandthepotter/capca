@@ -32,9 +32,12 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   switch (msg.type) {
     case "vc:start-recording": {
       recordingTabId = sender.tab?.id ?? null;
+      // NOTE: no targetTab argument — passing one binds the streamId to that
+      // tab's origin, and consuming it from the offscreen document then fails
+      // with "Error starting tab capture". Omitting it issues the streamId to
+      // the extension itself, which is what the offscreen recorder needs.
       chrome.desktopCapture.chooseDesktopMedia(
         ["screen", "window", "tab", "audio"],
-        sender.tab,
         async (streamId, options) => {
           if (!streamId) {
             notifyTab({ type: "vc:recording-cancelled" });
