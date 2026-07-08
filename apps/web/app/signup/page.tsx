@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { SocialAuth } from "@/components/social-auth";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -29,6 +30,7 @@ export default function SignupPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
       <h1 className="text-2xl font-bold">Create account</h1>
+      <SocialAuth />
       <form onSubmit={submit} className="flex flex-col gap-3">
         <input
           required

@@ -7,9 +7,16 @@ const API_BASES = ["http://localhost:3000", "https://capca.vercel.app"];
 let recordingTabId = null;
 
 chrome.action.onClicked.addListener(async (tab) => {
-  if (!tab.id || !/^https?:/.test(tab.url ?? "")) return;
-  await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["content.css"] });
-  await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+  if (!tab.id) return;
+  // Don't gate on tab.url — it's only populated for origins we hold host
+  // permissions on. activeTab grants injection rights on whatever tab was
+  // clicked; restricted pages (chrome://, Web Store) just throw, so catch.
+  try {
+    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["content.css"] });
+    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+  } catch {
+    // page doesn't allow extension scripts — nothing to do
+  }
 });
 
 async function ensureOffscreen() {
