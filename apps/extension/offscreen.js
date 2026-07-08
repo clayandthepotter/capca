@@ -64,6 +64,7 @@ async function getDesktopStream(streamId, withSystemAudio) {
 }
 
 async function start({ streamId, withMic, withSystemAudio }) {
+  console.log("[capca] offscreen start", { withMic, withSystemAudio });
   let step = "capture screen";
   try {
     const desktop = await getDesktopStream(streamId, withSystemAudio);

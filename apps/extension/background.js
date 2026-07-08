@@ -36,26 +36,33 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   switch (msg.type) {
     case "vc:start-recording": {
       recordingTabId = sender.tab?.id ?? null;
-      // NOTE: no targetTab argument — passing one binds the streamId to that
-      // tab's origin, and consuming it from the offscreen document then fails
-      // with "Error starting tab capture". Omitting it issues the streamId to
-      // the extension itself, which is what the offscreen recorder needs.
-      chrome.desktopCapture.chooseDesktopMedia(
-        ["screen", "window", "tab", "audio"],
-        async (streamId, options) => {
-          if (!streamId) {
-            notifyTab({ type: "vc:recording-cancelled" });
-            return;
+      console.log("[capca] start requested from tab", recordingTabId);
+      try {
+        // NOTE: no targetTab argument — passing one binds the streamId to that
+        // tab's origin, and consuming it from the offscreen document then fails
+        // with "Error starting tab capture". Omitting it issues the streamId to
+        // the extension itself, which is what the offscreen recorder needs.
+        chrome.desktopCapture.chooseDesktopMedia(
+          ["screen", "window", "tab", "audio"],
+          async (streamId, options) => {
+            console.log("[capca] picker result:", streamId ? "granted" : "cancelled");
+            if (!streamId) {
+              notifyTab({ type: "vc:recording-cancelled" });
+              return;
+            }
+            await ensureOffscreen();
+            chrome.runtime.sendMessage({
+              type: "vc:offscreen-start",
+              streamId,
+              withMic: msg.withMic,
+              withSystemAudio: options?.canRequestAudioTrack ?? false,
+            });
           }
-          await ensureOffscreen();
-          chrome.runtime.sendMessage({
-            type: "vc:offscreen-start",
-            streamId,
-            withMic: msg.withMic,
-            withSystemAudio: options?.canRequestAudioTrack ?? false,
-          });
-        }
-      );
+        );
+      } catch (err) {
+        console.error("[capca] chooseDesktopMedia failed:", err);
+        notifyTab({ type: "vc:recording-error", error: `open picker: ${err.message}` });
+      }
       break;
     }
     case "vc:stop-recording":

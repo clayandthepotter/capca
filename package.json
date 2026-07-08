@@ -9,5 +9,8 @@
     "dev": "pnpm --filter @video-capture/web dev",
     "build": "pnpm -r build",
     "lint": "pnpm -r lint"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.3.0"
   }
 }

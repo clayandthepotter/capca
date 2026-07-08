@@ -22,3 +22,6 @@ build/
 .turbo/
 .vercel/
 tsconfig.tsbuildinfo
+
+# local Chrome for Testing used by tools/extension-e2e.mjs
+.chrome-for-testing/

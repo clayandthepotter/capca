@@ -17,11 +17,14 @@
     play: '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg>',
     mic: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3"/></svg>',
     micOff: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 19v3M4 4l16 16"/></svg>',
+    cam: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.2 3.1a.6.6 0 0 0 .8-.5V8.4a.6.6 0 0 0-.8-.5L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>',
+    camOff: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 13 5.2 3.1a.6.6 0 0 0 .8-.5V8.4a.6.6 0 0 0-.8-.5L16 11"/><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M3 3l18 18"/></svg>',
     close: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   };
 
   let state = "idle"; // idle | starting | recording | paused | uploading
   let micOn = true;
+  let camOn = true;
   let seconds = 0;
   let timerId = null;
 
@@ -46,6 +49,7 @@
     <button class="vc-btn vc-btn-icon" data-action="pause" title="Pause" hidden>${SVG.pause}</button>
     <span class="vc-timer" hidden>0:00</span>
     <button class="vc-btn vc-btn-icon" data-action="mic" title="Toggle microphone">${SVG.mic}</button>
+    <button class="vc-btn vc-btn-icon" data-action="camera" title="Toggle camera">${SVG.cam}</button>
     <span class="vc-divider"></span>
     <button class="vc-btn vc-btn-icon vc-btn-ghost" data-action="close" title="Close">${SVG.close}</button>
   `;
@@ -61,6 +65,7 @@
     record: bar.querySelector('[data-action="record"]'),
     pause: bar.querySelector('[data-action="pause"]'),
     mic: bar.querySelector('[data-action="mic"]'),
+    camera: bar.querySelector('[data-action="camera"]'),
     close: bar.querySelector('[data-action="close"]'),
     timer: bar.querySelector(".vc-timer"),
   };
@@ -76,6 +81,9 @@
     el.pause.innerHTML = state === "paused" ? SVG.play : SVG.pause;
     el.mic.innerHTML = micOn ? SVG.mic : SVG.micOff;
     el.mic.classList.toggle("vc-btn-off", !micOn);
+    el.camera.innerHTML = camOn ? SVG.cam : SVG.camOff;
+    el.camera.classList.toggle("vc-btn-off", !camOn);
+    bubble.style.display = camOn ? "" : "none";
 
     if (state === "recording" || state === "paused") {
       el.record.innerHTML = `${SVG.stop}<span>Stop</span>`;
@@ -137,6 +145,13 @@
   el.mic.addEventListener("click", () => {
     micOn = !micOn;
     chrome.runtime.sendMessage({ type: "vc:set-mic", enabled: micOn });
+    render();
+  });
+
+  // Hiding the bubble removes it from the page, and therefore from the
+  // recording — the capture is of the page itself.
+  el.camera.addEventListener("click", () => {
+    camOn = !camOn;
     render();
   });
 
