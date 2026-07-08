@@ -32,6 +32,6 @@ otherwise it saves as a download.
 ## Known gaps
 
 - Upload targets are hardcoded in `background.js` (`API_BASES`) — localhost
-  and capca.vercel.app. A settings page for custom self-hosted domains is TODO.
+  and capca-cam.vercel.app. A settings page for custom self-hosted domains is TODO.
 - Picking the same tab you're on records the bubble (intended); picking a
   different window records that window but the bubble stays on the original tab.

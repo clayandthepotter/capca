@@ -2,7 +2,7 @@
 // script; recording happens in the offscreen document (no DOM/media APIs here).
 
 // Where to try uploading finished recordings (first one that has a session wins).
-const API_BASES = ["http://localhost:3000", "https://capca.vercel.app"];
+const API_BASES = ["http://localhost:3000", "https://capca-cam.vercel.app"];
 
 let recordingTabId = null;
 

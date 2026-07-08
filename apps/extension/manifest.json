@@ -13,7 +13,7 @@
   "host_permissions": [
     "http://localhost:3000/*",
     "http://localhost:9000/*",
-    "https://capca.vercel.app/*",
+    "https://capca-cam.vercel.app/*",
     "https://*.r2.cloudflarestorage.com/*"
   ],
   "action": {
