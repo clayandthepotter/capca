@@ -20,7 +20,11 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 async function ensureOffscreen() {
-  if (await chrome.offscreen.hasDocument?.()) return;
+  // Always start from a fresh offscreen document so no state (or stale code
+  // from a previous extension version) leaks between recordings.
+  if (await chrome.offscreen.hasDocument?.()) {
+    await chrome.offscreen.closeDocument().catch(() => {});
+  }
   await chrome.offscreen.createDocument({
     url: "offscreen.html",
     reasons: ["USER_MEDIA", "DISPLAY_MEDIA"],

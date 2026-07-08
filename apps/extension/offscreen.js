@@ -34,26 +34,41 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
-async function start({ streamId, withMic, withSystemAudio }) {
-  try {
-    const desktop = await navigator.mediaDevices.getUserMedia({
-      video: {
-        mandatory: {
-          chromeMediaSource: "desktop",
-          chromeMediaSourceId: streamId,
-          maxFrameRate: 30,
+async function getDesktopStream(streamId, withSystemAudio) {
+  const video = {
+    mandatory: {
+      chromeMediaSource: "desktop",
+      chromeMediaSourceId: streamId,
+      maxFrameRate: 30,
+    },
+  };
+  if (withSystemAudio) {
+    try {
+      // Audio grants are flaky across surface types (screen vs window vs
+      // tab) and platforms — if the combined request fails, fall back to
+      // video-only rather than failing the whole recording.
+      return await navigator.mediaDevices.getUserMedia({
+        video,
+        audio: {
+          mandatory: {
+            chromeMediaSource: "desktop",
+            chromeMediaSourceId: streamId,
+          },
         },
-      },
-      audio: withSystemAudio
-        ? {
-            mandatory: {
-              chromeMediaSource: "desktop",
-              chromeMediaSourceId: streamId,
-            },
-          }
-        : false,
-    });
+      });
+    } catch {
+      // fall through to video-only
+    }
+  }
+  return navigator.mediaDevices.getUserMedia({ video, audio: false });
+}
+
+async function start({ streamId, withMic, withSystemAudio }) {
+  let step = "capture screen";
+  try {
+    const desktop = await getDesktopStream(streamId, withSystemAudio);
     streams.push(desktop);
+    step = "set up recorder";
 
     micStream = null;
     if (withMic) {
@@ -107,7 +122,7 @@ async function start({ streamId, withMic, withSystemAudio }) {
     cleanup();
     chrome.runtime.sendMessage({
       type: "vc:recording-error",
-      error: err?.message ?? String(err),
+      error: `${step}: ${err?.message ?? String(err)}`,
     });
   }
 }
