@@ -42,10 +42,9 @@ Known gaps:
 - There is no production Docker image yet; local Docker only runs Postgres and
   MinIO.
 
-See [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) for the product
-roadmap, [docs/COMPETITIVE-ANALYSIS.md](docs/COMPETITIVE-ANALYSIS.md) for the
-Loom/Bluedot/Cap competitive read, and [ARCHITECTURE.md](ARCHITECTURE.md) for
-the technical architecture.
+See [docs/ROADMAP.md](docs/ROADMAP.md) for the public product roadmap,
+[docs/DESIGN.md](docs/DESIGN.md) for the UI/UX principles, and
+[ARCHITECTURE.md](ARCHITECTURE.md) for the technical architecture.
 
 ## Quick Start
 

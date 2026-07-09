@@ -25,3 +25,6 @@ tsconfig.tsbuildinfo
 
 # local Chrome for Testing used by tools/extension-e2e.mjs
 .chrome-for-testing/
+
+# private/local product research and brand drafts
+_docs/

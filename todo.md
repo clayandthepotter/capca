@@ -10,9 +10,13 @@ Updated: 2026-07-09
   Postgres + MinIO.
 - [ ] Define the Google Drive-backed free tier implementation plan for
   unlimited user-owned recordings.
+- [ ] Redesign the web UI around the calm, Drive-owned Capca brand direction.
 
 ## Next
 
+- [ ] Add billing gates for Capca-cost features: hosted video storage, proxied
+  streaming bandwidth, AI processing Capca pays for, team administration, and
+  automation.
 - [ ] Add Google OAuth and Drive connection state for free-tier recording
   exports.
 - [ ] Implement Drive resumable uploads with persisted session URI, byte
@@ -32,6 +36,13 @@ Updated: 2026-07-09
 
 ## Done
 
+- [x] Started the Drive-first UI redesign by replacing the old dark/S3-focused
+  landing page with a calm light homepage centered on recording, Drive
+  ownership, status visibility, and paid boundaries.
+- [x] Moved private product research into `_docs/`, added `_docs/` to
+  `.gitignore`, and created public roadmap/design docs in `docs/`.
+- [x] Captured the product rule that Capca-cost features must be paid, quotaed,
+  or bring-your-own-provider.
 - [x] Scraped Loom, Bluedot, and Cap public pages and reviewed the competitor
   screenshot folder to produce `docs/COMPETITIVE-ANALYSIS.md`.
 - [x] Decided the first competitive wedge: unlimited free recordings exported
