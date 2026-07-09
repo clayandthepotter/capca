@@ -43,7 +43,9 @@ Known gaps:
   MinIO.
 
 See [docs/PRODUCT_STRATEGY.md](docs/PRODUCT_STRATEGY.md) for the product
-roadmap and [ARCHITECTURE.md](ARCHITECTURE.md) for the technical architecture.
+roadmap, [docs/COMPETITIVE-ANALYSIS.md](docs/COMPETITIVE-ANALYSIS.md) for the
+Loom/Bluedot/Cap competitive read, and [ARCHITECTURE.md](ARCHITECTURE.md) for
+the technical architecture.
 
 ## Quick Start
 

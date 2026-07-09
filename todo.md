@@ -8,11 +8,17 @@ Updated: 2026-07-09
   content script, background status machine, and offscreen recorder agree.
 - [ ] Verify the current web record/upload/share/delete loop against local
   Postgres + MinIO.
-- [ ] Decide the first competitive wedge: web/extension-first self-hostable
-  async video, not desktop Studio Mode parity.
+- [ ] Define the Google Drive-backed free tier implementation plan for
+  unlimited user-owned recordings.
 
 ## Next
 
+- [ ] Add Google OAuth and Drive connection state for free-tier recording
+  exports.
+- [ ] Implement Drive resumable uploads with persisted session URI, byte
+  offsets, MIME type, Drive file id, and retry/recovery states.
+- [ ] Add Drive-backed share pages with explicit Drive file ownership, link
+  permission state, and source-file actions.
 - [ ] Add extension smoke tests for start, cancel, stop, upload fallback, and
   service-worker restart resync.
 - [ ] Make storage object keys respect actual recording format instead of always
@@ -26,6 +32,10 @@ Updated: 2026-07-09
 
 ## Done
 
+- [x] Scraped Loom, Bluedot, and Cap public pages and reviewed the competitor
+  screenshot folder to produce `docs/COMPETITIVE-ANALYSIS.md`.
+- [x] Decided the first competitive wedge: unlimited free recordings exported
+  to the user's Google Drive, with Capca metadata and polished share pages.
 - [x] Updated project metadata, documentation, local dev defaults, and app links
   after renaming the GitHub repo to `capca`.
 - [x] Rewrote the root README for clearer open-source onboarding, local setup,
