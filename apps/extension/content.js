@@ -55,7 +55,7 @@
   const bar = document.createElement("div");
   bar.className = "vc-bar";
   bar.innerHTML = `
-    <span class="vc-brand"><span class="vc-brand-dot"></span></span>
+    <button class="vc-brand" data-action="collapse" title="Hide toolbar" aria-label="Hide toolbar"><span class="vc-brand-dot"></span></button>
     <button class="vc-btn vc-btn-primary" data-action="record">${SVG.record}<span>Record</span></button>
     <button class="vc-btn vc-btn-icon" data-action="pause" title="Pause" hidden>${SVG.pause}</button>
     <span class="vc-timer" hidden>0:00</span>
@@ -65,14 +65,23 @@
     <button class="vc-btn vc-btn-icon vc-btn-ghost" data-action="close" title="Close">${SVG.close}</button>
   `;
 
+  const restore = document.createElement("button");
+  restore.className = "vc-restore";
+  restore.type = "button";
+  restore.title = "Show toolbar";
+  restore.setAttribute("aria-label", "Show toolbar");
+  restore.hidden = true;
+  restore.innerHTML = `<span class="vc-brand-dot"></span>`;
+
   const countdown = document.createElement("div");
   countdown.className = "vc-countdown";
   countdown.hidden = true;
 
-  root.append(bubble, bar, countdown);
+  root.append(bubble, bar, restore, countdown);
   document.documentElement.appendChild(root);
 
   const el = {
+    collapse: bar.querySelector('[data-action="collapse"]'),
     record: bar.querySelector('[data-action="record"]'),
     pause: bar.querySelector('[data-action="pause"]'),
     mic: bar.querySelector('[data-action="mic"]'),
@@ -80,6 +89,18 @@
     close: bar.querySelector('[data-action="close"]'),
     timer: bar.querySelector(".vc-timer"),
   };
+
+  function setToolbarCollapsed(collapsed) {
+    if (collapsed) {
+      const rect = bar.getBoundingClientRect();
+      restore.style.left = `${rect.left}px`;
+      restore.style.top = `${rect.top}px`;
+      restore.style.right = "auto";
+      restore.style.bottom = "auto";
+    }
+    bar.hidden = collapsed;
+    restore.hidden = !collapsed;
+  }
 
   function fmt(s) {
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
@@ -148,6 +169,20 @@
       state = "uploading";
       render();
     }
+  });
+
+  el.collapse.addEventListener("click", () => {
+    setToolbarCollapsed(true);
+  });
+  el.collapse.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
+  });
+
+  restore.addEventListener("click", () => {
+    setToolbarCollapsed(false);
+  });
+  restore.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
   });
 
   el.pause.addEventListener("click", () => {

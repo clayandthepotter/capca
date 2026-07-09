@@ -26,6 +26,8 @@ Updated: 2026-07-08
 
 ## Done
 
+- [x] Added toolbar collapse/restore by clicking the Capca logo in the in-page
+  recording controls.
 - [x] Fixed malformed Chrome tab-capture constraints that blocked current-tab
   recording from starting.
 - [x] Defaulted meeting-style captures toward current-tab recording so Google

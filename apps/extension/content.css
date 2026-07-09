@@ -4,6 +4,10 @@
   --vc-accent: #10b981;
 }
 
+#__vc_root [hidden] {
+  display: none !important;
+}
+
 #__vc_root .vc-bubble {
   position: fixed;
   left: 24px;
@@ -45,14 +49,22 @@
 }
 
 #__vc_root .vc-brand {
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  padding: 0;
+  border: 0;
   border-radius: 7px;
   background: var(--vc-accent);
   margin-right: 2px;
+  color: inherit;
+  cursor: pointer;
+}
+
+#__vc_root .vc-brand:hover {
+  background: #34d399;
 }
 
 #__vc_root .vc-brand-dot {
@@ -60,6 +72,33 @@
   height: 8px;
   border-radius: 50%;
   background: #0a0a0b;
+}
+
+#__vc_root .vc-restore {
+  position: fixed;
+  left: 24px;
+  bottom: 208px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--vc-border);
+  border-radius: 11px;
+  background: var(--vc-accent);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  z-index: 2147483646;
+  cursor: pointer;
+}
+
+#__vc_root .vc-restore:hover {
+  background: #34d399;
+}
+
+#__vc_root .vc-restore .vc-brand-dot {
+  width: 10px;
+  height: 10px;
 }
 
 #__vc_root .vc-btn {
