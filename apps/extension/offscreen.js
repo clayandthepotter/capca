@@ -128,18 +128,13 @@ async function getDisplayStream(mode, includeAudio) {
 }
 
 function getTabStream(streamId, includeAudio) {
+  const source = {
+    mandatory: { chromeMediaSource: "tab", chromeMediaSourceId: streamId },
+  };
+
   return navigator.mediaDevices.getUserMedia({
-    video: {
-      mandatory: { chromeMediaSource: "tab", chromeMediaSourceId: streamId },
-    },
-    audio: includeAudio
-      ? {
-          mandatory: { chromeMediaSource: "tab", chromeMediaSourceId: streamId },
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        }
-      : false,
+    video: source,
+    audio: includeAudio ? source : false,
   });
 }
 

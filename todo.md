@@ -26,6 +26,8 @@ Updated: 2026-07-08
 
 ## Done
 
+- [x] Fixed malformed Chrome tab-capture constraints that blocked current-tab
+  recording from starting.
 - [x] Defaulted meeting-style captures toward current-tab recording so Google
   Meet participant audio is captured through Chrome tab audio.
 - [x] Routed captured tab audio back to local playback while recording.
