@@ -1,6 +1,6 @@
 # Todo
 
-Updated: 2026-07-08
+Updated: 2026-07-09
 
 ## In Progress
 
@@ -26,6 +26,8 @@ Updated: 2026-07-08
 
 ## Done
 
+- [x] Rewrote the root README for clearer open-source onboarding, local setup,
+  extension usage, troubleshooting, and contribution guidance.
 - [x] Removed the redundant extension capture-mode dropdown; Chrome's native
   picker now determines tab/window/screen capture.
 - [x] Removed the `tabCapture` dependency that caused repeat recordings on the
