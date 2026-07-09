@@ -13,16 +13,16 @@ otherwise it saves as a download.
 1. `chrome://extensions` → enable **Developer mode**
 2. **Load unpacked** → select this folder (`apps/extension`)
 3. Pin the extension and click it on any normal page (not `chrome://` pages)
-4. Choose a capture mode in the popup and start recording
+4. Start recording and choose what to share in Chrome's native picker
 
-For Google Meet and other browser-based meetings, use **Current tab with
-audio**. Screen/window capture depends on Chrome's display picker granting
-shared audio, which is not reliable for every surface.
+For Google Meet and other browser-based meetings, choose the meeting tab in
+Chrome's picker and keep **Also share tab audio** enabled. The extension does
+not ask for a capture mode separately; Chrome's picker is the source of truth.
 
 ## How it works
 
-- **popup.html / popup.js / popup.css** — the toolbar popup. Lets the user pick
-  capture mode and start/stop recording without injecting UI on every tab.
+- **popup.html / popup.js / popup.css** — the toolbar popup. Starts/stops
+  recording without duplicating Chrome's capture-mode picker.
 - **background.js** — service worker. Coordinates the popup, page controls, and
   offscreen recorder; it also owns the extension status badge.
 - **content.js / content.css** — passive page script until the popup/background
@@ -32,9 +32,10 @@ shared audio, which is not reliable for every surface.
   iframe on the extension origin so camera+mic permission is granted once for
   the extension instead of per-site.
 - **offscreen.html / offscreen.js** — MediaRecorder lives here (MV3 service
-  workers have no DOM/media APIs). Mixes display/tab audio + mic, routes
-  captured tab audio back to local playback, records MP4 when Chrome supports it
-  and WebM as fallback, then returns a blob URL.
+  workers have no DOM/media APIs). Uses Chrome's native `getDisplayMedia`
+  picker, mixes display/tab audio + mic, routes captured tab audio back to local
+  playback, records MP4 when Chrome supports it and WebM as fallback, then
+  returns a blob URL.
 
 ## Known gaps
 

@@ -2,13 +2,10 @@
 // recording state (the service worker can die and resync from here).
 //
 // Capture model ported from Cap (github.com/CapSoftware/Cap, AGPL-3.0):
-// - fullscreen/window: getDisplayMedia() *in this document* with
-//   surface-preference hints and a fallback ladder. No chrome.desktopCapture,
-//   no streamId origin binding — this is what fixes captures silently binding
-//   to the original tab.
-// - tab: chrome.tabCapture streamId from the SW, consumed here with
-//   chromeMediaSource: "tab".
-// - camera: plain getUserMedia.
+// - capture: getDisplayMedia() *in this document* so Chrome's native picker is
+//   the only source of truth for tab/window/screen choice. No tabCapture stream
+//   ids, no activeTab grant dependency between recordings.
+// - camera bubble: preview iframe in the captured page; mic is captured here.
 // - MP4 (H.264/AAC) preferred, WebM fallback.
 
 const DISPLAY_IDEAL = { width: 1920, height: 1080, frameRate: 30 };
@@ -17,21 +14,6 @@ const VIDEO_CONSTRAINTS = {
   frameRate: { ideal: DISPLAY_IDEAL.frameRate },
   width: { ideal: DISPLAY_IDEAL.width },
   height: { ideal: DISPLAY_IDEAL.height },
-};
-
-const DISPLAY_MODE_PREFERENCES = {
-  fullscreen: {
-    monitorTypeSurfaces: "include",
-    selfBrowserSurface: "exclude",
-    surfaceSwitching: "exclude",
-    preferCurrentTab: false,
-  },
-  window: {
-    monitorTypeSurfaces: "exclude",
-    selfBrowserSurface: "exclude",
-    surfaceSwitching: "exclude",
-    preferCurrentTab: false,
-  },
 };
 
 const MP4_MIME_TYPES = {
@@ -92,8 +74,7 @@ function isUserCancellation(err) {
   return err?.name === "NotAllowedError" || err?.name === "AbortError";
 }
 
-async function getDisplayStream(mode, includeAudio) {
-  const preferences = DISPLAY_MODE_PREFERENCES[mode] ?? {};
+async function getDisplayStream(includeAudio) {
   const video = VIDEO_CONSTRAINTS;
   const audio = includeAudio
     ? {
@@ -105,10 +86,11 @@ async function getDisplayStream(mode, includeAudio) {
     : false;
   try {
     return await navigator.mediaDevices.getDisplayMedia({
-      ...preferences,
       video,
       audio,
       systemAudio: "include",
+      selfBrowserSurface: "exclude",
+      surfaceSwitching: "include",
       windowAudio: "system",
     });
   } catch (err) {
@@ -127,31 +109,6 @@ async function getDisplayStream(mode, includeAudio) {
   }
 }
 
-function getTabStream(streamId, includeAudio) {
-  const source = {
-    mandatory: { chromeMediaSource: "tab", chromeMediaSourceId: streamId },
-  };
-
-  return navigator.mediaDevices.getUserMedia({
-    video: source,
-    audio: includeAudio ? source : false,
-  });
-}
-
-function getMainStream(mode, tabStreamId) {
-  if (mode === "tab") {
-    if (!tabStreamId) throw new Error("Tab stream id is missing");
-    return getTabStream(tabStreamId, true);
-  }
-  if (mode === "camera") {
-    return navigator.mediaDevices.getUserMedia({
-      video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    });
-  }
-  return getDisplayStream(mode, true);
-}
-
 function pickMimeType(hasAudio) {
   const ladders = hasAudio
     ? [...MP4_MIME_TYPES.withAudio, ...WEBM_MIME_TYPES.withAudio]
@@ -162,11 +119,12 @@ function pickMimeType(hasAudio) {
   return "";
 }
 
-async function start({ mode, withMic, tabStreamId }) {
-  console.log("[capca] offscreen start", { mode, withMic });
+async function start({ withMic }) {
+  console.log("[capca] offscreen start", { withMic });
   let step = "capture";
   try {
-    const main = await getMainStream(mode, tabStreamId);
+    const main = await getDisplayStream(true);
+    const displaySurface = main.getVideoTracks()[0]?.getSettings().displaySurface;
 
     step = "microphone";
     let micStream = null;
@@ -195,9 +153,11 @@ async function start({ mode, withMic, tabStreamId }) {
       for (const s of audioSources) {
         const source = audioCtx.createMediaStreamSource(s);
         source.connect(dest);
-        // Chrome mutes tab playback while tabCapture is active unless the
-        // extension explicitly routes it back to the speakers.
-        if (s === main && mode === "tab") source.connect(audioCtx.destination);
+        // Chrome may mute captured tab playback unless the extension explicitly
+        // routes browser-surface audio back to the speakers.
+        if (s === main && displaySurface === "browser") {
+          source.connect(audioCtx.destination);
+        }
       }
       dest.stream.getAudioTracks().forEach((t) => output.addTrack(t));
     }

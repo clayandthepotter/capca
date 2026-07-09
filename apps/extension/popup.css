@@ -58,7 +58,6 @@ p {
   background: #0a0a0b;
 }
 
-.field,
 .check {
   display: flex;
   gap: 10px;
@@ -66,21 +65,6 @@ p {
   margin-top: 12px;
   color: #d4d4d8;
   font-size: 13px;
-}
-
-.field {
-  align-items: stretch;
-  flex-direction: column;
-  gap: 6px;
-}
-
-select {
-  width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 9px 10px;
-  background: #18181b;
-  color: #fafafa;
 }
 
 input {

@@ -26,6 +26,10 @@ Updated: 2026-07-08
 
 ## Done
 
+- [x] Removed the redundant extension capture-mode dropdown; Chrome's native
+  picker now determines tab/window/screen capture.
+- [x] Removed the `tabCapture` dependency that caused repeat recordings on the
+  same tab to fail with activeTab grant errors.
 - [x] Added toolbar collapse/restore by clicking the Capca logo in the in-page
   recording controls.
 - [x] Fixed malformed Chrome tab-capture constraints that blocked current-tab

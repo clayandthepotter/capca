@@ -1,6 +1,5 @@
 const el = {
   status: document.getElementById("status"),
-  mode: document.getElementById("mode"),
   mic: document.getElementById("mic"),
   camera: document.getElementById("camera"),
   primary: document.getElementById("primary"),
@@ -9,13 +8,6 @@ const el = {
 };
 
 let currentStatus = { phase: "idle" };
-
-const MODE_HELP = {
-  tab: "Best for Google Meet, Teams, Zoom web, and browser audio.",
-  fullscreen:
-    "Screen/window recording only captures meeting audio if Chrome offers and grants shared audio.",
-  camera: "Records the camera and microphone only.",
-};
 
 function send(message) {
   return chrome.runtime.sendMessage(message).catch((err) => {
@@ -37,7 +29,6 @@ async function showControls() {
   if (tabId == null) return;
   const status = {
     ...currentStatus,
-    mode: el.mode.value,
     withMic: el.mic.checked,
     withCamera: el.camera.checked,
   };
@@ -63,7 +54,6 @@ function render(status) {
         ? "Uploading..."
         : "Start recording";
 
-  el.mode.disabled = active || phase === "creating" || phase === "uploading";
   el.mic.disabled = phase === "creating" || phase === "uploading";
   el.camera.disabled = phase === "creating" || phase === "uploading";
 
@@ -89,11 +79,6 @@ function render(status) {
   }
 }
 
-function renderModeHelp() {
-  document.getElementById("mode-help").textContent =
-    MODE_HELP[el.mode.value] ?? MODE_HELP.tab;
-}
-
 el.primary.addEventListener("click", async () => {
   const phase = currentStatus.phase;
   if (phase === "recording" || phase === "paused") {
@@ -103,14 +88,11 @@ el.primary.addEventListener("click", async () => {
 
   await send({
     type: "vc:start-recording",
-    mode: el.mode.value,
     withMic: el.mic.checked,
     withCamera: el.camera.checked,
   });
   await showControls();
 });
-
-el.mode.addEventListener("change", renderModeHelp);
 
 el.controls.addEventListener("click", () => {
   void showControls();
@@ -122,12 +104,4 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 send({ type: "vc:get-status" }).then((response) => {
   render(response?.status ?? { phase: "idle" });
-});
-
-activeTab().then((tab) => {
-  const url = tab?.url ?? "";
-  if (/^https:\/\/meet\.google\.com\//.test(url)) {
-    el.mode.value = "tab";
-  }
-  renderModeHelp();
 });

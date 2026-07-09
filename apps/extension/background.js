@@ -84,37 +84,18 @@ async function showControls(tabId, status) {
 }
 
 async function startRecording({
-  mode = "fullscreen",
   withMic = true,
   withCamera = true,
 } = {}) {
-  await setStatus({ phase: "creating", mode, withMic, withCamera });
+  await setStatus({ phase: "creating", withMic, withCamera });
 
-  let tabStreamId;
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  await showControls(activeTab?.id, { phase: "creating", mode, withMic, withCamera });
-  if (mode === "tab") {
-    if (activeTab?.id == null) {
-      await setStatus({ phase: "error", error: "No active tab to record" });
-      return;
-    }
-    tabStreamId = await new Promise((resolve) =>
-      chrome.tabCapture.getMediaStreamId({ targetTabId: activeTab.id }, (id) =>
-        resolve(id),
-      ),
-    );
-    if (!tabStreamId) {
-      await setStatus({ phase: "error", error: "Tab capture was not granted" });
-      return;
-    }
-  }
+  await showControls(activeTab?.id, { phase: "creating", withMic, withCamera });
 
   await ensureOffscreen();
   chrome.runtime.sendMessage({
     type: "vc:offscreen-start",
-    mode,
     withMic,
-    tabStreamId,
   });
 }
 

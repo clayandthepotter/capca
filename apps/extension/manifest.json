@@ -9,7 +9,6 @@
     "scripting",
     "storage",
     "activeTab",
-    "tabCapture",
     "downloads"
   ],
   "host_permissions": ["http://*/*", "https://*/*"],
