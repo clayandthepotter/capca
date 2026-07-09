@@ -11,7 +11,7 @@
 #__vc_root .vc-bubble {
   position: fixed;
   left: 24px;
-  bottom: 24px;
+  bottom: 92px;
   width: 168px;
   height: 168px;
   border-radius: 50%;
@@ -33,7 +33,7 @@
 #__vc_root .vc-bar {
   position: fixed;
   left: 24px;
-  bottom: 208px;
+  bottom: 24px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -77,7 +77,7 @@
 #__vc_root .vc-restore {
   position: fixed;
   left: 24px;
-  bottom: 208px;
+  bottom: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,11 +89,15 @@
   background: var(--vc-accent);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   z-index: 2147483646;
-  cursor: pointer;
+  cursor: grab;
 }
 
 #__vc_root .vc-restore:hover {
   background: #1d4ed8;
+}
+
+#__vc_root .vc-restore:active {
+  cursor: grabbing;
 }
 
 #__vc_root .vc-restore .vc-brand-dot {

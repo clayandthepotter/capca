@@ -37,6 +37,14 @@ Updated: 2026-07-09
 
 ## Done
 
+- [x] Moved the in-page recording controls below the camera bubble by default.
+- [x] Persisted extension bubble position, toolbar position, minimized toolbar
+  position, and collapsed state across tabs.
+- [x] Made the minimized Capca control draggable while preserving
+  click-to-restore behavior.
+- [x] Reduced extension audio/video drift by preserving the original audio track
+  when only one audio source is recorded and only using Web Audio mixing when
+  mic and captured tab/system audio both need to be combined.
 - [x] Aligned the active web app and extension interfaces to the Capca brand
   system: light Drive-first web surfaces, blue trust accent, neutral structure,
   and consistent ownership/status language.

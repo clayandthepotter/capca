@@ -7,6 +7,22 @@
   window.__capcaContentLoaded = true;
 
   let mounted = false;
+  const UI_STATE_KEY = "capca:ui-state:v1";
+
+  async function readUiState() {
+    try {
+      const store = await chrome.storage.local.get(UI_STATE_KEY);
+      return store[UI_STATE_KEY] ?? {};
+    } catch {
+      return {};
+    }
+  }
+
+  async function writeUiState(state) {
+    try {
+      await chrome.storage.local.set({ [UI_STATE_KEY]: state });
+    } catch {}
+  }
 
   function removeControls() {
     document.getElementById("__vc_root")?.remove();
@@ -37,6 +53,7 @@
   let camOn = initialStatus?.withCamera ?? true;
   let seconds = 0;
   let timerId = null;
+  let uiState = {};
 
   const root = document.createElement("div");
   root.id = "__vc_root";
@@ -89,16 +106,50 @@
     timer: bar.querySelector(".vc-timer"),
   };
 
-  function setToolbarCollapsed(collapsed) {
-    if (collapsed) {
-      const rect = bar.getBoundingClientRect();
-      restore.style.left = `${rect.left}px`;
-      restore.style.top = `${rect.top}px`;
-      restore.style.right = "auto";
-      restore.style.bottom = "auto";
+  function clamp(value, min, max) {
+    return Math.min(Math.max(value, min), max);
+  }
+
+  function setFixedPosition(target, position) {
+    if (!position) return null;
+    const rect = target.getBoundingClientRect();
+    const width = rect.width || target.offsetWidth || 1;
+    const height = rect.height || target.offsetHeight || 1;
+    const next = {
+      left: clamp(position.left, 8, Math.max(8, window.innerWidth - width - 8)),
+      top: clamp(position.top, 8, Math.max(8, window.innerHeight - height - 8)),
+    };
+    target.style.left = `${Math.round(next.left)}px`;
+    target.style.top = `${Math.round(next.top)}px`;
+    target.style.right = "auto";
+    target.style.bottom = "auto";
+    return next;
+  }
+
+  function getFixedPosition(target) {
+    const rect = target.getBoundingClientRect();
+    return { left: Math.round(rect.left), top: Math.round(rect.top) };
+  }
+
+  function persistUiState(patch) {
+    uiState = { ...uiState, ...patch };
+    void writeUiState(uiState);
+  }
+
+  function setToolbarCollapsed(collapsed, options = {}) {
+    const { persist = true, syncRestore = true } = options;
+    let restorePosition = null;
+    if (collapsed && syncRestore) {
+      restorePosition = setFixedPosition(restore, getFixedPosition(bar));
     }
     bar.hidden = collapsed;
     restore.hidden = !collapsed;
+    if (persist) {
+      persistUiState({
+        collapsed,
+        ...(restorePosition ? { restore: restorePosition } : {}),
+      });
+    }
   }
 
   function fmt(s) {
@@ -177,6 +228,7 @@
   });
 
   restore.addEventListener("click", () => {
+    if (restore.dataset.dragged === "true") return;
     setToolbarCollapsed(false);
   });
   restore.addEventListener("pointerdown", (e) => {
@@ -317,31 +369,58 @@
     setTimeout(() => t.remove(), 4000);
   }
 
-  // --- dragging (bubble and bar share the logic) ---
-  for (const dragEl of [bubble, bar]) {
+  function makeDraggable(dragEl, stateKey, canStart = () => true) {
     dragEl.addEventListener("pointerdown", (e) => {
-      if (e.target.closest("button")) return;
+      if (e.button !== 0 || !canStart(e)) return;
       e.preventDefault();
       const startX = e.clientX;
       const startY = e.clientY;
       const rect = dragEl.getBoundingClientRect();
+      let moved = false;
+
       const move = (ev) => {
-        dragEl.style.left = `${rect.left + (ev.clientX - startX)}px`;
-        dragEl.style.top = `${rect.top + (ev.clientY - startY)}px`;
-        dragEl.style.right = "auto";
-        dragEl.style.bottom = "auto";
+        const next = setFixedPosition(dragEl, {
+          left: rect.left + (ev.clientX - startX),
+          top: rect.top + (ev.clientY - startY),
+        });
+        moved =
+          moved ||
+          Math.abs(ev.clientX - startX) > 3 ||
+          Math.abs(ev.clientY - startY) > 3;
+        if (next) uiState = { ...uiState, [stateKey]: next };
       };
       const up = () => {
         window.removeEventListener("pointermove", move);
         window.removeEventListener("pointerup", up);
+        if (moved) {
+          void writeUiState(uiState);
+          dragEl.dataset.dragged = "true";
+          window.setTimeout(() => {
+            delete dragEl.dataset.dragged;
+          }, 0);
+        }
       };
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", up);
     });
   }
 
+  makeDraggable(bubble, "bubble");
+  makeDraggable(bar, "bar", (e) => !e.target.closest("button"));
+  makeDraggable(restore, "restore");
+
   render();
-  if (initialStatus) applyStatus(initialStatus);
+  void (async () => {
+    uiState = await readUiState();
+    setFixedPosition(bubble, uiState.bubble);
+    setFixedPosition(bar, uiState.bar);
+    setFixedPosition(restore, uiState.restore);
+    setToolbarCollapsed(Boolean(uiState.collapsed), {
+      persist: false,
+      syncRestore: !uiState.restore,
+    });
+    if (initialStatus) applyStatus(initialStatus);
+  })();
   }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {

@@ -131,7 +131,12 @@ async function start({ withMic }) {
     if (withMic) {
       try {
         micStream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+            channelCount: 1,
+          },
         });
       } catch (err) {
         console.warn("[capca] mic unavailable, recording without it:", err?.message);
@@ -144,15 +149,28 @@ async function start({ withMic }) {
     if (micStream) streams.push(micStream);
 
     let audioCtx = null;
+    const audioNodes = [];
     const audioSources = [main, micStream].filter(
       (s) => s && s.getAudioTracks().length > 0,
     );
-    if (audioSources.length > 0) {
-      audioCtx = new AudioContext();
+    if (audioSources.length === 1) {
+      audioSources[0].getAudioTracks().forEach((t) => output.addTrack(t));
+
+      // Keep tab audio audible locally without routing the recorded track
+      // through Web Audio, which can add delay relative to the video track.
+      if (audioSources[0] === main && displaySurface === "browser") {
+        audioCtx = new AudioContext({ latencyHint: "interactive" });
+        const source = audioCtx.createMediaStreamSource(main);
+        source.connect(audioCtx.destination);
+        audioNodes.push(source);
+      }
+    } else if (audioSources.length > 1) {
+      audioCtx = new AudioContext({ latencyHint: "interactive" });
       const dest = audioCtx.createMediaStreamDestination();
       for (const s of audioSources) {
         const source = audioCtx.createMediaStreamSource(s);
         source.connect(dest);
+        audioNodes.push(source);
         // Chrome may mute captured tab playback unless the extension explicitly
         // routes browser-surface audio back to the speakers.
         if (s === main && displaySurface === "browser") {
@@ -160,6 +178,7 @@ async function start({ withMic }) {
         }
       }
       dest.stream.getAudioTracks().forEach((t) => output.addTrack(t));
+      audioNodes.push(dest);
     }
 
     // The user hit the browser's own "Stop sharing" affordance, closed the
@@ -197,6 +216,7 @@ async function start({ withMic }) {
       streams,
       micStream,
       audioCtx,
+      audioNodes,
       chunks,
       startedAt: Date.now(),
       pausedMs: 0,
