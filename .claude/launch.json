@@ -4,7 +4,7 @@
     {
       "name": "web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@video-capture/web", "dev"],
+      "runtimeArgs": ["--filter", "@capca/web", "dev"],
       "port": 3000
     }
   ]

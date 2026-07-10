@@ -6,6 +6,14 @@
   if (window.__capcaContentLoaded) return;
   window.__capcaContentLoaded = true;
 
+  // Let the Capca web app detect that the extension is installed (content
+  // scripts share the DOM with the page, so a data attribute is visible to
+  // page scripts even though JS worlds are isolated).
+  try {
+    document.documentElement.dataset.capcaExtension =
+      chrome.runtime.getManifest().version;
+  } catch {}
+
   let mounted = false;
   const UI_STATE_KEY = "capca:ui-state:v1";
 

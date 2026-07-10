@@ -19,7 +19,7 @@ async function ownedRecording(id: string) {
   return { row };
 }
 
-/** Mark an upload finished. */
+/** Finish an upload and/or update metadata (rename). */
 export async function PATCH(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const found = await ownedRecording(id);
@@ -28,6 +28,17 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   const body = await req.json().catch(() => ({}));
+
+  // Rename-only request: don't touch upload state.
+  if (typeof body.title === "string" && body.sizeBytes === undefined) {
+    const title = body.title.trim().slice(0, 200);
+    if (!title) {
+      return NextResponse.json({ error: "Title required" }, { status: 400 });
+    }
+    await db.update(recording).set({ title }).where(eq(recording.id, id));
+    return NextResponse.json({ ok: true });
+  }
+
   await db
     .update(recording)
     .set({

@@ -5,7 +5,29 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { recording } from "@/lib/db/schema";
-import { RecordingRow } from "./recording-row";
+import { Library } from "./library";
+
+function StatCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-zinc-950">
+        {value}
+      </p>
+      {hint && <p className="mt-1 text-xs text-zinc-500">{hint}</p>}
+    </div>
+  );
+}
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -17,11 +39,21 @@ export default async function DashboardPage() {
     .where(eq(recording.userId, session.user.id))
     .orderBy(desc(recording.createdAt));
 
+  const ready = rows.filter((r) => r.status === "ready");
+  const totalBytes = ready.reduce((sum, r) => sum + (r.sizeBytes ?? 0), 0);
+  const totalSize =
+    totalBytes < 1024 * 1024 * 1024
+      ? `${(totalBytes / (1024 * 1024)).toFixed(1)} MB`
+      : `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-8 px-6 py-8">
+    <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-8">
       <header className="flex flex-col gap-6 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-blue-700">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-blue-700"
+          >
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600">
               <span className="h-2.5 w-2.5 rounded-full bg-white" />
             </span>
@@ -31,12 +63,8 @@ export default async function DashboardPage() {
             Library
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">
-            My recordings
+            {session.user.name ? `${session.user.name.split(" ")[0]}'s recordings` : "My recordings"}
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-            Review recordings, copy share links, and keep storage destination
-            visible as the Drive workflow comes online.
-          </p>
         </div>
         <Link
           href="/record"
@@ -46,28 +74,43 @@ export default async function DashboardPage() {
         </Link>
       </header>
 
+      <div className="grid gap-4 sm:grid-cols-3">
+        <StatCard
+          label="Recordings"
+          value={String(rows.length)}
+          hint={
+            rows.length !== ready.length
+              ? `${rows.length - ready.length} with incomplete uploads`
+              : undefined
+          }
+        />
+        <StatCard label="Storage used" value={totalSize} hint="In your bucket" />
+        <StatCard
+          label="Storage destination"
+          value="Your S3 bucket"
+          hint="Google Drive support is coming"
+        />
+      </div>
+
       {rows.length === 0 ? (
         <section className="rounded-2xl border border-dashed border-blue-200 bg-blue-50/60 p-10 text-center">
           <p className="text-lg font-semibold text-zinc-950">
-            No recordings yet
+            Record your first video
           </p>
           <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-zinc-600">
-            Start with a quick browser recording. Capca should always tell you
-            where the file is stored and what happens next.
+            Install the Capca extension, click its toolbar icon on any page,
+            and press record. Your recording uploads automatically and the
+            share link lands here.
           </p>
           <Link
             href="/record"
             className="mt-6 inline-flex rounded-lg bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"
           >
-            Record your first video
+            Set up recording
           </Link>
         </section>
       ) : (
-        <ul className="flex flex-col divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
-          {rows.map((r) => (
-            <RecordingRow key={r.id} recording={r} />
-          ))}
-        </ul>
+        <Library recordings={rows} />
       )}
     </main>
   );
