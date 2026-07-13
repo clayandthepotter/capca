@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { DESTINATIONS, userSettings } from "@/lib/db/schema";
+import { DESTINATIONS, user, userSettings } from "@/lib/db/schema";
 import { getCapcaCloudUsageBytes } from "@/lib/storage";
 
 async function ensureSettings(userId: string) {
@@ -26,11 +26,18 @@ export async function GET() {
   }
   const settings = await ensureSettings(session.user.id);
   const usageBytes = await getCapcaCloudUsageBytes(session.user.id);
+  const [profile] = await db
+    .select({ name: user.name, email: user.email })
+    .from(user)
+    .where(eq(user.id, session.user.id))
+    .limit(1);
+  const name = session.user.name || profile?.name || session.user.email || profile?.email;
+  const email = session.user.email || profile?.email;
 
   return NextResponse.json({
     user: {
-      name: session.user.name,
-      email: session.user.email,
+      name,
+      email,
     },
     defaultDestination: settings.defaultDestination,
     capcaQuotaBytes: settings.capcaQuotaBytes,

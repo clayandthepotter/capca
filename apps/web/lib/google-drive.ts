@@ -1,25 +1,25 @@
 /**
  * Google Drive integration: OAuth (separate consent from sign-in, since it
  * requests the drive.file scope) plus resumable-upload session creation.
- * Activates only once GOOGLE_CLIENT_ID/SECRET are set — same pattern as the
- * social sign-in providers in lib/auth.ts.
+ * Activates once Google OAuth credentials are set through env vars or the
+ * gitignored local Google credential JSON.
  */
+
+import { getGoogleOAuthCredentials } from "./oauth-credentials";
 
 const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const DEFAULT_FOLDER_NAME = "Capca Recordings";
 
 export function isDriveConfigured() {
-  return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
+  return Boolean(getGoogleOAuthCredentials());
 }
 
 function requireCreds() {
-  if (!isDriveConfigured()) {
+  const credentials = getGoogleOAuthCredentials();
+  if (!credentials) {
     throw new Error("Google Drive is not configured on this server");
   }
-  return {
-    clientId: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-  };
+  return credentials;
 }
 
 export function buildDriveConsentUrl(redirectUri: string, state: string) {

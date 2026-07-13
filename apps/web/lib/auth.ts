@@ -2,20 +2,23 @@ import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { db } from "./db";
 import * as schema from "./db/schema";
+import { getGoogleOAuthCredentials } from "./oauth-credentials";
+
+const googleOAuthCredentials = getGoogleOAuthCredentials();
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg", schema }),
   emailAndPassword: {
     enabled: true,
   },
-  // Providers activate only when their env vars are set, so the app runs
+  // Providers activate only when credentials are available, so the app runs
   // fine before the OAuth apps are registered.
   socialProviders: {
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ...(googleOAuthCredentials
       ? {
           google: {
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            clientId: googleOAuthCredentials.clientId,
+            clientSecret: googleOAuthCredentials.clientSecret,
           },
         }
       : {}),

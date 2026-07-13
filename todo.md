@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Loaded provided local Google OAuth credentials for auth/Drive when env
+  vars are absent, and made extension account identity fall back to the
+  persisted user profile.
 - [x] Showed signed-in identity in the extension, prompted signed-out users to
   sign in for sharing, showed Dashboard instead of Sign in on the homepage when
   authenticated, and exposed sign out in the dashboard shell.
