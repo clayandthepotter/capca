@@ -37,6 +37,14 @@ function pickMimeType(): string {
   return "";
 }
 
+function createLowLatencyAudioContext() {
+  try {
+    return new AudioContext({ latencyHint: 0.003 });
+  } catch {
+    return new AudioContext({ latencyHint: "interactive" });
+  }
+}
+
 async function attachVideo(stream: MediaStream): Promise<HTMLVideoElement> {
   const video = document.createElement("video");
   video.srcObject = stream;
@@ -92,18 +100,22 @@ export class CompositeRecorder {
       this.canvas.captureStream(fps).getVideoTracks(),
     );
 
-    // Mix mic + any display (tab/system) audio into one track.
+    // Preserve native timestamps when there is only one audio source. Web
+    // Audio mixing is only needed when mic and display/tab audio both exist.
     const audioSources = [
       ...(mic ? [mic] : []),
       ...(screen.getAudioTracks().length ? [screen] : []),
     ];
-    if (audioSources.length > 0) {
-      this.audioCtx = new AudioContext();
+    if (audioSources.length === 1) {
+      audioSources[0].getAudioTracks().forEach((t) => output.addTrack(t));
+    } else if (audioSources.length > 1) {
+      this.audioCtx = createLowLatencyAudioContext();
       const dest = this.audioCtx.createMediaStreamDestination();
       for (const s of audioSources) {
         this.audioCtx.createMediaStreamSource(s).connect(dest);
       }
       dest.stream.getAudioTracks().forEach((t) => output.addTrack(t));
+      await this.audioCtx.resume();
     }
 
     this.recorder = new MediaRecorder(output, {

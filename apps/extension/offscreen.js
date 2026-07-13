@@ -55,6 +55,14 @@ const WEBM_MIME_TYPES = {
   videoOnly: ["video/webm;codecs=vp9", "video/webm"],
 };
 
+function createLowLatencyAudioContext() {
+  try {
+    return new AudioContext({ latencyHint: 0.003 });
+  } catch {
+    return new AudioContext({ latencyHint: "interactive" });
+  }
+}
+
 let active = null; // { recorder, streams, micStream, audioCtx, audioNodes, uploader, startedAt, pausedMs, pausedAt }
 let uploadsInFlight = 0;
 let pendingLocalSaves = new Map(); // blobUrl -> true (kept alive until the download drains)
@@ -671,13 +679,14 @@ async function start({ withMic, keepLocalCopy, destination, signedIn = true }) {
       // Keep tab audio audible locally without routing the recorded track
       // through Web Audio, which can add delay relative to the video track.
       if (audioSources[0] === main && displaySurface === "browser") {
-        audioCtx = new AudioContext({ latencyHint: "interactive" });
+        audioCtx = createLowLatencyAudioContext();
         const source = audioCtx.createMediaStreamSource(main);
         source.connect(audioCtx.destination);
         audioNodes.push(source);
+        await audioCtx.resume();
       }
     } else if (audioSources.length > 1) {
-      audioCtx = new AudioContext({ latencyHint: "interactive" });
+      audioCtx = createLowLatencyAudioContext();
       const dest = audioCtx.createMediaStreamDestination();
       for (const s of audioSources) {
         const source = audioCtx.createMediaStreamSource(s);
@@ -691,6 +700,7 @@ async function start({ withMic, keepLocalCopy, destination, signedIn = true }) {
       }
       dest.stream.getAudioTracks().forEach((t) => output.addTrack(t));
       audioNodes.push(dest);
+      await audioCtx.resume();
     }
 
     // The user hit the browser's own "Stop sharing" affordance, closed the

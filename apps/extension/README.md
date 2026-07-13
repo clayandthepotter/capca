@@ -33,9 +33,13 @@ not ask for a capture mode separately; Chrome's picker is the source of truth.
   the extension instead of per-site.
 - **offscreen.html / offscreen.js** — MediaRecorder lives here (MV3 service
   workers have no DOM/media APIs). Uses Chrome's native `getDisplayMedia`
-  picker, mixes display/tab audio + mic, routes captured tab audio back to local
-  playback, records MP4 when Chrome supports it and WebM as fallback, then
-  returns a blob URL.
+  picker, preserves native audio tracks when possible, uses a low-latency
+  mixer only when display/tab audio and mic both need to be combined, routes
+  captured tab audio back to local playback, records MP4 when Chrome supports
+  it and WebM as fallback, then returns a blob URL.
+- **bubble.html / bubble.js** delays the visible presenter-camera feed very
+  slightly because the page-rendered bubble is captured as video while mic
+  audio is captured separately in the offscreen recorder.
 
 ## Known gaps
 

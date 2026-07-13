@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Reduced recording audio/video sync drift by delaying the presenter-bubble
+  video slightly to align with separately captured mic audio, preserving native
+  audio tracks when possible, and minimizing Web Audio mixer latency.
 - [x] Fixed Google Drive recording library actions so Drive exports show
   "View in Google Drive" when a Drive web link or file id is available, and
   requested Drive `webViewLink` metadata for future resumable uploads.
