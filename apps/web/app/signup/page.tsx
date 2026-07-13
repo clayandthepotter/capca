@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { authClient } from "@/lib/auth-client";
+import { BrandLogo } from "@/components/brand-logo";
 import { SocialAuth } from "@/components/social-auth";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,12 +31,7 @@ export default function SignupPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
       <section className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <Link href="/" className="inline-flex items-center gap-3 text-sm font-semibold text-zinc-700 hover:text-blue-700">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-blue-600 text-white">
-            <span className="h-3 w-3 rounded-full bg-white" />
-          </span>
-          Capca
-        </Link>
+        <BrandLogo href="/" size="md" className="text-sm hover:text-blue-700" />
         <div className="mt-8">
           <p className="text-sm font-semibold uppercase tracking-[0.16em] text-blue-700">
             Start free

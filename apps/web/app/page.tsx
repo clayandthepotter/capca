@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
+import { BrandLogo } from "@/components/brand-logo";
 import { auth } from "@/lib/auth";
 
 const GITHUB_URL = "https://github.com/clayandthepotter/capca";
@@ -67,28 +68,13 @@ const icons = {
   ),
 };
 
-function Logo() {
-  return (
-    <span className="flex items-center gap-2.5">
-      <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600 text-white shadow-sm">
-        <span className="h-3 w-3 rounded-full border-2 border-white" />
-      </span>
-      <span className="text-[18px] font-semibold tracking-tight text-slate-950">
-        Capca
-      </span>
-    </span>
-  );
-}
-
 async function Header() {
   const session = await auth.api.getSession({ headers: await headers() });
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-6">
-        <Link href="/" aria-label="Capca home">
-          <Logo />
-        </Link>
+        <BrandLogo href="/" />
         <div className="hidden items-center gap-8 text-sm font-medium text-slate-600 md:flex">
           <a href="#product" className="hover:text-slate-950">
             Product
@@ -418,7 +404,7 @@ function Footer() {
     <footer className="border-t border-slate-200 bg-white px-5 py-10 sm:px-6">
       <div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 text-sm text-slate-500 sm:flex-row">
         <div>
-          <Logo />
+          <BrandLogo />
           <p className="mt-3 max-w-md">
             Browser-first recording with user-owned storage and open-source
             foundations.

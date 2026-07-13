@@ -37,6 +37,8 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Standardized Capca logo references across web app pages, favicon-aligned
+  SVG assets, dashboard, auth surfaces, share pages, and extension UI.
 - [x] Allowed trusted same-email OAuth account linking across email, Google,
   and GitHub sign-in, kept OAuth failures on the auth screen, and configured
   GitHub OAuth credentials in Vercel Production.

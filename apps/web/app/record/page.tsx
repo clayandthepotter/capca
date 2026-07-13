@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BrandLogo } from "@/components/brand-logo";
 
 const GITHUB_URL = "https://github.com/clayandthepotter/video-capture";
 
@@ -42,15 +43,7 @@ export default function RecordPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col gap-6 px-6 py-10">
       <header>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-blue-700"
-        >
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600">
-            <span className="h-2.5 w-2.5 rounded-full bg-white" />
-          </span>
-          Capca
-        </Link>
+        <BrandLogo href="/" className="text-sm text-zinc-600 hover:text-blue-700" />
         <p className="mt-6 text-sm font-semibold uppercase tracking-[0.16em] text-blue-700">
           Record
         </p>

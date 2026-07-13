@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import { db } from "@/lib/db";
 import { recording } from "@/lib/db/schema";
 
@@ -31,12 +32,7 @@ export default async function SharePage({ params }: Props) {
     <main className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6 px-6 py-8">
       <header className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-600 hover:text-blue-700">
-            <span className="grid h-8 w-8 place-items-center rounded-lg bg-blue-600">
-              <span className="h-2.5 w-2.5 rounded-full bg-white" />
-            </span>
-            Capca
-          </Link>
+          <BrandLogo href="/" className="text-sm text-zinc-600 hover:text-blue-700" />
           <h1 className="mt-6 text-3xl font-bold tracking-tight text-zinc-950">
             {row.title}
           </h1>
