@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Moved the primary extension launcher from Chrome's native popup to a
+  rounded content-script overlay triggered by the extension icon, with a
+  fallback popup window for restricted pages.
 - [x] Reviewed the public rounded-popup example repo and confirmed it uses
   `chrome.action.onClicked` plus `chrome.scripting.executeScript` to inject a
   fixed page overlay instead of using Chrome's native `default_popup`.

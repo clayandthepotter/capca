@@ -6,6 +6,7 @@
 // be rebuilt from storage + the offscreen document at any time.
 
 const STATUS_KEY = "capca:status";
+const API_BASES = ["http://localhost:3000", "https://capca-cam.vercel.app"];
 
 // status: { phase: "idle"|"creating"|"recording"|"paused"|"uploading"|"error",
 //           startedAt?, pausedMs?, error?, shareUrl? }
@@ -80,6 +81,63 @@ async function showControls(tabId, status) {
   }
 }
 
+async function toggleLauncher(tabId, status) {
+  if (tabId == null) return openPopupFallback();
+  try {
+    await chrome.tabs.sendMessage(tabId, { type: "vc:toggle-launcher", status });
+  } catch {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["content.js"],
+      });
+      await chrome.tabs.sendMessage(tabId, { type: "vc:toggle-launcher", status });
+    } catch {
+      await openPopupFallback();
+    }
+  }
+}
+
+async function openPopupFallback() {
+  await chrome.windows.create({
+    url: chrome.runtime.getURL("popup.html"),
+    type: "popup",
+    width: 392,
+    height: 620,
+    focused: true,
+  });
+}
+
+async function getAccountState() {
+  for (const base of API_BASES) {
+    try {
+      const [settingsRes, driveRes] = await Promise.all([
+        fetch(`${base}/api/settings`, { credentials: "include" }),
+        fetch(`${base}/api/drive/status`, { credentials: "include" }),
+      ]);
+      if (settingsRes.status === 401 || !settingsRes.ok) continue;
+
+      const settings = await settingsRes.json();
+      let drive = { configured: false, connected: false };
+      if (driveRes.ok) drive = await driveRes.json();
+
+      return {
+        ok: true,
+        apiBase: base,
+        settings,
+        drive,
+      };
+    } catch {
+      // Try the next configured Capca host.
+    }
+  }
+  return {
+    ok: false,
+    settings: null,
+    drive: { configured: false, connected: false },
+  };
+}
+
 async function startRecording({
   withMic = true,
   withCamera = true,
@@ -121,6 +179,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       break;
     case "vc:get-status":
       void syncStatus().then((status) => sendResponse({ status }));
+      return true; // async response
+    case "vc:get-account-state":
+      void getAccountState().then((account) => sendResponse(account));
       return true; // async response
 
     // ---- events from the offscreen recorder ----
@@ -179,6 +240,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       void handleRecordingComplete(msg);
       break;
   }
+});
+
+chrome.action.onClicked.addListener((tab) => {
+  void syncStatus().then((status) => toggleLauncher(tab.id, status));
 });
 
 function isRecordingPhase(phase) {

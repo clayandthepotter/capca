@@ -13,8 +13,7 @@
   ],
   "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
-    "default_title": "Record with Capca",
-    "default_popup": "popup.html"
+    "default_title": "Record with Capca"
   },
   "background": {
     "service_worker": "background.js"
