@@ -72,6 +72,15 @@ function DestinationBadge({
   );
 }
 
+function driveViewUrl(rec: Recording) {
+  if (rec.destination !== "drive") return null;
+  if (rec.driveWebViewLink) return rec.driveWebViewLink;
+  if (rec.driveFileId) {
+    return `https://drive.google.com/file/d/${rec.driveFileId}/view`;
+  }
+  return null;
+}
+
 function Row({ rec }: { rec: Recording }) {
   const router = useRouter();
   const [renaming, setRenaming] = useState(false);
@@ -117,6 +126,7 @@ function Row({ rec }: { rec: Recording }) {
     .join(" · ");
 
   const isCapca = rec.destination === "capca" && rec.status === "ready";
+  const openInDriveUrl = driveViewUrl(rec);
 
   return (
     <li className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -171,14 +181,14 @@ function Row({ rec }: { rec: Recording }) {
             </a>
           </>
         )}
-        {rec.destination === "drive" && rec.driveWebViewLink && (
+        {openInDriveUrl && (
           <a
-            href={rec.driveWebViewLink}
+            href={openInDriveUrl}
             target="_blank"
             rel="noreferrer"
             className="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:border-zinc-400"
           >
-            Open in Drive
+            View in Google Drive
           </a>
         )}
         {rec.destination === "local" && (

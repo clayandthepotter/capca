@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Fixed Google Drive recording library actions so Drive exports show
+  "View in Google Drive" when a Drive web link or file id is available, and
+  requested Drive `webViewLink` metadata for future resumable uploads.
 - [x] Set up Google Drive OAuth capability for production: verified Drive API
   enabled, refreshed Google OAuth credentials in Vercel Production, redeployed
   `capca-cam.vercel.app`, and confirmed the dashboard shows Drive connected to
