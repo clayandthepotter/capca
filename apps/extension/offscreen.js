@@ -474,14 +474,14 @@ class DriveUploader extends BaseUploader {
   }
 }
 
-/** Destination: "local" — no cloud storage at all. A library row is created
- * for visibility (status "ready" immediately, nothing to upload), and the
- * recording is always saved to disk on stop. */
+/** Destination: "local" — no cloud storage at all. Signed-in users get a
+ * dashboard row for visibility; signed-out users only get the downloaded file. */
 class LocalOnlyUploader extends BaseUploader {
-  constructor(mimeType, title) {
+  constructor(mimeType, title, signedIn) {
     super(mimeType, title, true); // never cap the local buffer
     this.destination = "local";
-    this.initPromise = this.#createRow();
+    this.signedIn = signedIn;
+    this.initPromise = signedIn ? this.#createRow() : Promise.resolve();
   }
 
   async #createRow() {
@@ -613,14 +613,19 @@ function pickMimeType(hasAudio) {
   return "";
 }
 
-function createUploader(destination, mimeType, title, keepLocalCopy) {
+function createUploader(destination, mimeType, title, keepLocalCopy, signedIn) {
   if (destination === "drive") return new DriveUploader(mimeType, title, keepLocalCopy);
-  if (destination === "local") return new LocalOnlyUploader(mimeType, title);
+  if (destination === "local") return new LocalOnlyUploader(mimeType, title, signedIn);
   return new CapcaUploader(mimeType, title, keepLocalCopy);
 }
 
-async function start({ withMic, keepLocalCopy, destination }) {
-  console.log("[capca] offscreen start", { withMic, keepLocalCopy, destination });
+async function start({ withMic, keepLocalCopy, destination, signedIn = true }) {
+  console.log("[capca] offscreen start", {
+    withMic,
+    keepLocalCopy,
+    destination,
+    signedIn,
+  });
   if (active) {
     chrome.runtime.sendMessage({
       type: "vc:recording-error",
@@ -707,6 +712,7 @@ async function start({ withMic, keepLocalCopy, destination }) {
       recorder.mimeType || mimeType || "video/webm",
       `Recording ${new Date().toLocaleString()}`,
       Boolean(keepLocalCopy),
+      Boolean(signedIn),
     );
 
     recorder.ondataavailable = (e) => {

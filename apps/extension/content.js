@@ -108,12 +108,12 @@
             <span class="vc-launcher-label">Destination</span>
             <div class="vc-launcher-picker">
               <button class="vc-launcher-select" type="button" aria-haspopup="listbox" aria-expanded="false">
-                <span data-role="destination-label">Capca Cloud</span>${SVG.chevron}
+                <span data-role="destination-label">This device</span>${SVG.chevron}
               </button>
               <div class="vc-launcher-menu" role="listbox" hidden>
-                <button type="button" role="option" data-destination="capca" aria-selected="true">Capca Cloud</button>
+                <button type="button" role="option" data-destination="capca" aria-selected="false">Capca Cloud</button>
                 <button type="button" role="option" data-destination="drive" aria-selected="false">Google Drive</button>
-                <button type="button" role="option" data-destination="local" aria-selected="false">This device</button>
+                <button type="button" role="option" data-destination="local" aria-selected="true">This device</button>
               </div>
             </div>
           </div>
@@ -160,7 +160,9 @@
     let currentStatus = initialStatus ?? { phase: "idle" };
     let micOn = currentStatus.withMic ?? true;
     let cameraOn = currentStatus.withCamera ?? true;
-    let destination = "capca";
+    let keepLocalPreference = false;
+    let signedIn = false;
+    let destination = "local";
     let driveConfigured = false;
     let driveConnected = false;
     let lastUsage = null;
@@ -179,6 +181,9 @@
     }
 
     function renderDestination() {
+      if (!signedIn && destination !== "local") {
+        destination = "local";
+      }
       if (destination === "drive" && !driveConnected) {
         destination = "capca";
       }
@@ -186,16 +191,21 @@
       for (const option of el.options) {
         const value = option.dataset.destination;
         option.textContent =
-          value === "drive" && !driveConnected
+          !signedIn && value !== "local"
+            ? `${DESTINATION_LABEL[value]} (sign in required)`
+            : value === "drive" && !driveConnected
             ? "Google Drive (not connected)"
             : DESTINATION_LABEL[value];
-        option.disabled = value === "drive" && !driveConnected;
+        option.disabled =
+          (!signedIn && value !== "local") || (value === "drive" && !driveConnected);
         option.setAttribute("aria-selected", value === destination ? "true" : "false");
       }
     }
 
     function renderBadge() {
-      if (destination === "drive") {
+      if (!signedIn) {
+        el.badge.textContent = "Local only";
+      } else if (destination === "drive") {
         el.badge.textContent = driveConnected ? "Free with Drive" : "Drive not connected";
       } else if (destination === "local") {
         el.badge.textContent = "Saved to your device";
@@ -223,6 +233,8 @@
       el.mic.disabled = creating || active;
       el.camera.disabled = creating || active;
       el.select.disabled = creating || active;
+      el.keepLocal.checked = !signedIn || keepLocalPreference;
+      el.keepLocal.disabled = !signedIn;
 
       el.micValue.textContent = micOn ? "On" : "Off";
       el.micValue.dataset.off = micOn ? "false" : "true";
@@ -252,6 +264,9 @@
       } else if (currentStatus.savedLocally) {
         el.message.textContent =
           currentStatus.uploadNote || "Saved to your device.";
+      } else if (!signedIn) {
+        el.message.textContent =
+          "Sign in to save to Capca Cloud, add recordings to your dashboard, or share links.";
       } else if (!el.message.textContent.startsWith("Connect Google Drive")) {
         el.message.textContent = "";
       }
@@ -299,8 +314,9 @@
     });
 
     el.keepLocal.addEventListener("change", () => {
+      keepLocalPreference = el.keepLocal.checked;
       void chrome.storage.local.set({
-        [SETTINGS_KEY]: { keepLocalCopy: el.keepLocal.checked },
+        [SETTINGS_KEY]: { keepLocalCopy: keepLocalPreference },
       });
     });
 
@@ -322,6 +338,7 @@
         withMic: micOn,
         withCamera: cameraOn,
         destination,
+        signedIn,
       });
     });
 
@@ -335,17 +352,23 @@
     });
 
     void chrome.storage.local.get(SETTINGS_KEY).then((store) => {
-      el.keepLocal.checked = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+      keepLocalPreference = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+      render();
     });
 
     void chrome.runtime
       .sendMessage({ type: "vc:get-account-state" })
       .then((account) => {
+        signedIn = Boolean(account?.signedIn);
         if (account?.ok) {
           lastUsage = account.settings;
           destination = account.settings?.defaultDestination || "capca";
           driveConfigured = Boolean(account.drive?.configured);
           driveConnected = Boolean(account.drive?.connected);
+        } else {
+          destination = "local";
+          driveConfigured = false;
+          driveConnected = false;
         }
         render();
       })

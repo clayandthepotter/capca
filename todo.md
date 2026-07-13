@@ -37,6 +37,8 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Gated extension sharing behind sign-in and forced signed-out recordings
+  to local-only downloads with no dashboard/cloud record.
 - [x] Moved the primary extension launcher from Chrome's native popup to a
   rounded content-script overlay triggered by the extension icon, with a
   fallback popup window for restricted pages.

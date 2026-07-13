@@ -30,17 +30,23 @@ const DESTINATION_LABEL = {
 
 let micOn = true;
 let cameraOn = true;
+let keepLocalPreference = false;
+let signedIn = false;
 let driveConnected = false;
 let driveConfigured = false;
 let apiBase = null; // the API_BASES entry that answered, reused for links
 
+el.destination.value = "local";
+
 void chrome.storage.local.get(SETTINGS_KEY).then((store) => {
-  el.keepLocal.checked = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+  keepLocalPreference = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+  render();
 });
 
 el.keepLocal.addEventListener("change", () => {
+  keepLocalPreference = el.keepLocal.checked;
   void chrome.storage.local.set({
-    [SETTINGS_KEY]: { keepLocalCopy: el.keepLocal.checked },
+    [SETTINGS_KEY]: { keepLocalCopy: keepLocalPreference },
   });
 });
 
@@ -134,7 +140,9 @@ function formatGB(bytes) {
 
 function renderBadge(usage) {
   const destination = el.destination.value;
-  if (destination === "drive") {
+  if (!signedIn) {
+    el.badge.textContent = "Local only";
+  } else if (destination === "drive") {
     el.badge.textContent = driveConnected ? "Free with Drive" : "Drive not connected";
   } else if (destination === "local") {
     el.badge.textContent = "Saved to your device";
@@ -146,11 +154,21 @@ function renderBadge(usage) {
 }
 
 function updateDestinationAvailability() {
+  const capcaOption = el.destination.querySelector('option[value="capca"]');
   const driveOption = el.destination.querySelector('option[value="drive"]');
-  driveOption.disabled = !driveConnected;
-  driveOption.textContent = driveConnected
-    ? "Google Drive"
-    : "Google Drive (not connected)";
+  capcaOption.disabled = !signedIn;
+  capcaOption.textContent = signedIn
+    ? "Capca Cloud"
+    : "Capca Cloud (sign in required)";
+  driveOption.disabled = !signedIn || !driveConnected;
+  driveOption.textContent = !signedIn
+    ? "Google Drive (sign in required)"
+    : driveConnected
+      ? "Google Drive"
+      : "Google Drive (not connected)";
+  if (!signedIn && el.destination.value !== "local") {
+    el.destination.value = "local";
+  }
   if (el.destination.value === "drive" && !driveConnected) {
     el.message.textContent =
       "Connect Google Drive in Settings to record straight to it.";
@@ -178,6 +196,7 @@ async function loadAccountState() {
       if (!settingsRes.ok) continue;
 
       apiBase = base;
+      signedIn = true;
       const settings = await settingsRes.json();
       lastUsage = settings;
       el.destination.value = settings.defaultDestination || "capca";
@@ -195,7 +214,9 @@ async function loadAccountState() {
     }
   }
   // Not signed in anywhere reachable — defaults stand, Capca Cloud stays
-  // selected, and starting will surface "sign in" via the usual fallback.
+  // unavailable; signed-out recordings are local-only downloads.
+  signedIn = false;
+  el.destination.value = "local";
   updateDestinationAvailability();
   renderBadge(null);
 }
@@ -250,6 +271,8 @@ function render(status) {
   el.mic.disabled = phase === "creating" || active;
   el.camera.disabled = phase === "creating" || active;
   el.destination.disabled = phase === "creating" || active;
+  el.keepLocal.checked = !signedIn || keepLocalPreference;
+  el.keepLocal.disabled = !signedIn;
   syncDestinationMenu();
 
   el.screenStatus.textContent =
@@ -277,6 +300,9 @@ function render(status) {
     el.message.textContent = "Link opened in a new tab.";
   } else if (currentStatus.savedLocally) {
     el.message.textContent = currentStatus.uploadNote || "Saved to your device.";
+  } else if (!signedIn) {
+    el.message.textContent =
+      "Sign in to save to Capca Cloud, add recordings to your dashboard, or share links.";
   } else if (phase !== "error") {
     el.message.textContent = "";
   }
@@ -303,6 +329,7 @@ el.primary.addEventListener("click", async () => {
     withMic: micOn,
     withCamera: cameraOn,
     destination,
+    signedIn,
   });
   await showControls();
 });

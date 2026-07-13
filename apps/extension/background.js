@@ -123,6 +123,7 @@ async function getAccountState() {
 
       return {
         ok: true,
+        signedIn: true,
         apiBase: base,
         settings,
         drive,
@@ -133,6 +134,7 @@ async function getAccountState() {
   }
   return {
     ok: false,
+    signedIn: false,
     settings: null,
     drive: { configured: false, connected: false },
   };
@@ -142,7 +144,10 @@ async function startRecording({
   withMic = true,
   withCamera = true,
   destination = "capca",
+  signedIn = null,
 } = {}) {
+  const effectiveSignedIn =
+    typeof signedIn === "boolean" ? signedIn : (await getAccountState()).signedIn;
   await setStatus({ phase: "creating", withMic, withCamera });
 
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -156,7 +161,8 @@ async function startRecording({
   chrome.runtime.sendMessage({
     type: "vc:offscreen-start",
     withMic,
-    destination,
+    destination: effectiveSignedIn ? destination : "local",
+    signedIn: effectiveSignedIn,
     keepLocalCopy: Boolean(settings?.keepLocalCopy),
   });
 }
