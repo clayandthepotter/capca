@@ -31,3 +31,5 @@ _docs/
 
 # google creds
 google_oauth_creds.json
+
+.vercel
