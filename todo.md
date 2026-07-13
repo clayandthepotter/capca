@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Added Google OAuth client id/secret to the Vercel Production environment
+  for `capca` and redeployed production so Google sign-in is registered on
+  `capca-cam.vercel.app`.
 - [x] Loaded provided local Google OAuth credentials for auth/Drive when env
   vars are absent, made extension account identity fall back to the persisted
   user profile, and removed the `Capca user` placeholder from signed-in
