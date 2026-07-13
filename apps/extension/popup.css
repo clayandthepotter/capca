@@ -10,18 +10,26 @@
 :root {
   color-scheme: light;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #ffffff;
+  background: transparent;
   color: #0f172a;
 }
 
 body {
-  width: 360px;
+  width: 372px;
   margin: 0;
-  background: #ffffff;
+  padding: 6px;
+  background: transparent;
 }
 
 main {
+  position: relative;
   padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 20px 48px rgba(15, 23, 42, 0.18),
+    0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 h1,
@@ -151,26 +159,118 @@ button.row:disabled {
   color: #94a3b8;
 }
 
-.row-select {
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.destination-picker {
+  position: relative;
+  flex-shrink: 0;
+  max-width: 180px;
   margin-left: auto;
-  border: 0;
+}
+
+.destination-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  width: 100%;
+  min-width: 136px;
+  margin-left: auto;
+  border: 1px solid transparent;
+  border-radius: 8px;
   background: transparent;
   font: inherit;
   font-size: 12.5px;
   font-weight: 700;
   color: #0f172a;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 14px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right center;
-  background-size: 11px;
+  padding: 5px 7px 5px 9px;
 }
 
-.row-select option:disabled {
+.destination-trigger:hover,
+.destination-trigger[aria-expanded="true"] {
+  border-color: #dbeafe;
+  background: #eff6ff;
+}
+
+.destination-trigger:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.destination-trigger span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.destination-trigger svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  color: #64748b;
+}
+
+.destination-menu {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  width: max-content;
+  min-width: 184px;
+  max-width: 232px;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid #dbe4ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.18),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.destination-menu[hidden] {
+  display: none;
+}
+
+.destination-option {
+  width: 100%;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.destination-option:hover,
+.destination-option:focus-visible {
+  background: #f1f5f9;
+  outline: none;
+}
+
+.destination-option[aria-selected="true"] {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.destination-option:disabled {
+  cursor: default;
   color: #94a3b8;
+  background: transparent;
 }
 
 .check {

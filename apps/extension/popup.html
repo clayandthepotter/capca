@@ -62,11 +62,30 @@
             </svg>
           </span>
           <span class="row-label">Destination</span>
-          <select id="destination" class="row-select">
-            <option value="capca">Capca Cloud</option>
-            <option value="drive">Google Drive</option>
-            <option value="local">This device</option>
-          </select>
+          <div class="destination-picker" id="destination-picker">
+            <button
+              id="destination-trigger"
+              class="destination-trigger"
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span id="destination-label">Capca Cloud</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            <div id="destination-menu" class="destination-menu" role="listbox" hidden>
+              <button class="destination-option" type="button" role="option" data-value="capca" aria-selected="true">Capca Cloud</button>
+              <button class="destination-option" type="button" role="option" data-value="drive" aria-selected="false">Google Drive</button>
+              <button class="destination-option" type="button" role="option" data-value="local" aria-selected="false">This device</button>
+            </div>
+            <select id="destination" class="sr-only" tabindex="-1" aria-hidden="true">
+              <option value="capca">Capca Cloud</option>
+              <option value="drive">Google Drive</option>
+              <option value="local">This device</option>
+            </select>
+          </div>
         </div>
       </div>
 

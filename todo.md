@@ -1,6 +1,6 @@
 # Todo
 
-Updated: 2026-07-09
+Updated: 2026-07-13
 
 ## In Progress
 
@@ -37,6 +37,9 @@ Updated: 2026-07-09
 
 ## Done
 
+- [x] Rounded the Chrome extension popup surface, switched the destination
+  picker from a native select to a Capca-styled menu, and kept unavailable
+  Google Drive state visible in the menu.
 - [x] Moved the in-page recording controls below the camera bubble by default.
 - [x] Persisted extension bubble position, toolbar position, minimized toolbar
   position, and collapsed state across tabs.

@@ -8,6 +8,11 @@ const el = {
   camera: document.getElementById("camera-toggle"),
   keepLocal: document.getElementById("keep-local"),
   destination: document.getElementById("destination"),
+  destinationPicker: document.getElementById("destination-picker"),
+  destinationTrigger: document.getElementById("destination-trigger"),
+  destinationLabel: document.getElementById("destination-label"),
+  destinationMenu: document.getElementById("destination-menu"),
+  destinationOptions: document.querySelectorAll(".destination-option"),
   primary: document.getElementById("primary"),
   controls: document.getElementById("open-controls"),
   message: document.getElementById("message"),
@@ -56,6 +61,73 @@ el.camera.addEventListener("click", () => {
 renderToggle(el.mic, micOn);
 renderToggle(el.camera, cameraOn);
 
+function selectedDestinationOption() {
+  return el.destination.options[el.destination.selectedIndex];
+}
+
+function closeDestinationMenu() {
+  el.destinationMenu.hidden = true;
+  el.destinationTrigger.setAttribute("aria-expanded", "false");
+}
+
+function syncDestinationMenu() {
+  const selectedValue = el.destination.value;
+  const selectedOption = selectedDestinationOption();
+  el.destinationLabel.textContent =
+    selectedOption?.textContent ?? DESTINATION_LABEL[selectedValue] ?? "Capca Cloud";
+  el.destinationTrigger.disabled = el.destination.disabled;
+
+  for (const option of el.destinationOptions) {
+    const matchingSelectOption = el.destination.querySelector(
+      `option[value="${option.dataset.value}"]`,
+    );
+    option.textContent =
+      matchingSelectOption?.textContent ??
+      DESTINATION_LABEL[option.dataset.value] ??
+      option.textContent;
+    option.disabled = Boolean(matchingSelectOption?.disabled);
+    option.setAttribute(
+      "aria-selected",
+      option.dataset.value === selectedValue ? "true" : "false",
+    );
+  }
+
+  if (el.destination.disabled) {
+    closeDestinationMenu();
+  }
+}
+
+el.destinationTrigger.addEventListener("click", () => {
+  if (el.destinationTrigger.disabled) return;
+  const shouldOpen = el.destinationMenu.hidden;
+  el.destinationMenu.hidden = !shouldOpen;
+  el.destinationTrigger.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+});
+
+for (const option of el.destinationOptions) {
+  option.addEventListener("click", () => {
+    if (option.disabled) return;
+    el.destination.value = option.dataset.value;
+    closeDestinationMenu();
+    syncDestinationMenu();
+    el.destination.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+
+document.addEventListener("click", (event) => {
+  if (!el.destinationPicker.contains(event.target)) {
+    closeDestinationMenu();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    closeDestinationMenu();
+    el.destinationTrigger.focus();
+  }
+});
+syncDestinationMenu();
+
 function formatGB(bytes) {
   return (bytes / (1024 * 1024 * 1024)).toFixed(1);
 }
@@ -85,6 +157,7 @@ function updateDestinationAvailability() {
   } else if (el.message.textContent.startsWith("Connect Google Drive")) {
     el.message.textContent = "";
   }
+  syncDestinationMenu();
 }
 
 el.destination.addEventListener("change", () => {
@@ -123,6 +196,7 @@ async function loadAccountState() {
   }
   // Not signed in anywhere reachable — defaults stand, Capca Cloud stays
   // selected, and starting will surface "sign in" via the usual fallback.
+  updateDestinationAvailability();
   renderBadge(null);
 }
 void loadAccountState();
@@ -176,6 +250,7 @@ function render(status) {
   el.mic.disabled = phase === "creating" || active;
   el.camera.disabled = phase === "creating" || active;
   el.destination.disabled = phase === "creating" || active;
+  syncDestinationMenu();
 
   el.screenStatus.textContent =
     phase === "recording" ? "Recording" : phase === "paused" ? "Paused" : "Ready";
