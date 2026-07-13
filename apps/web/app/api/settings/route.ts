@@ -19,6 +19,15 @@ async function ensureSettings(userId: string) {
   return created;
 }
 
+function displayName(name?: string | null, email?: string | null) {
+  const trimmedName = name?.trim();
+  const trimmedEmail = email?.trim();
+  if (trimmedName && trimmedName.toLowerCase() !== "capca user") {
+    return trimmedName;
+  }
+  return trimmedEmail || trimmedName || null;
+}
+
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
@@ -31,8 +40,8 @@ export async function GET() {
     .from(user)
     .where(eq(user.id, session.user.id))
     .limit(1);
-  const name = session.user.name || profile?.name || session.user.email || profile?.email;
   const email = session.user.email || profile?.email;
+  const name = displayName(session.user.name || profile?.name, email);
 
   return NextResponse.json({
     user: {

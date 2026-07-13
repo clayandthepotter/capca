@@ -269,7 +269,7 @@ function render(status) {
   el.keepLocal.checked = !signedIn || keepLocalPreference;
   el.keepLocal.disabled = !signedIn;
   accountLine.textContent = signedIn
-    ? `Signed in as: ${accountUser?.name || accountUser?.email || "Capca user"}`
+    ? `Signed in as: ${accountUser?.name || accountUser?.email || "your account"}`
     : "Not signed in";
   syncDestinationMenu();
   renderBadge(lastUsage);
