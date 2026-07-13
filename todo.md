@@ -4,6 +4,7 @@ Updated: 2026-07-13
 
 ## In Progress
 
+- [ ] Set up and verify Google Drive OAuth capability for production recording exports.
 - [ ] Stabilize the Chrome extension refactor so manifest, popup/control UI,
   content script, background status machine, and offscreen recorder agree.
 - [ ] Verify the current web record/upload/share/delete loop against local
