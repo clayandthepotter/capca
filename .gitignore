@@ -28,3 +28,6 @@ tsconfig.tsbuildinfo
 
 # private/local product research and brand drafts
 _docs/
+
+# google creds
+google_oauth_creds.json
