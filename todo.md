@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Kept recording controls and the presenter bubble synced onto the active
+  tab when switching tabs, loading a new active tab, or focusing another
+  browser window during an active recording.
 - [x] Reduced recording audio/video sync drift by delaying the presenter-bubble
   video slightly to align with separately captured mic audio, preserving native
   audio tracks when possible, and minimizing Web Audio mixer latency.

@@ -98,6 +98,22 @@ async function toggleLauncher(tabId, status) {
   }
 }
 
+function shouldShowControlsForStatus(status) {
+  return (
+    status?.phase === "creating" ||
+    status?.phase === "recording" ||
+    status?.phase === "paused"
+  );
+}
+
+async function syncControlsToTab(tabId) {
+  if (tabId == null) return;
+  const status = await syncStatus();
+  if (shouldShowControlsForStatus(status)) {
+    await showControls(tabId, status);
+  }
+}
+
 async function openPopupFallback() {
   await chrome.windows.create({
     url: chrome.runtime.getURL("popup.html"),
@@ -207,7 +223,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
     // ---- events from the offscreen recorder ----
     case "vc:recording-started":
-      void setStatus({ phase: "recording", startedAt: Date.now() });
+      void getStatus().then((s) =>
+        setStatus({ ...s, phase: "recording", startedAt: Date.now() }),
+      );
       break;
     case "vc:recording-paused":
       void getStatus().then((s) => setStatus({ ...s, phase: "paused" }));
@@ -265,6 +283,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.action.onClicked.addListener((tab) => {
   void syncStatus().then((status) => toggleLauncher(tab.id, status));
+});
+
+chrome.tabs.onActivated.addListener(({ tabId }) => {
+  void syncControlsToTab(tabId);
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && tab.active) {
+    void syncControlsToTab(tabId);
+  }
+});
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  void chrome.tabs
+    .query({ active: true, windowId })
+    .then(([tab]) => syncControlsToTab(tab?.id));
 });
 
 function isRecordingPhase(phase) {
