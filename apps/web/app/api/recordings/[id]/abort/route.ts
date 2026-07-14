@@ -8,7 +8,8 @@ import { abortMultipartUpload, objectKey } from "@/lib/storage";
 
 type Params = { params: Promise<{ id: string }> };
 
-/** Cancel an in-progress multipart upload and remove the recording row. */
+/** Cancel an in-progress upload. By default the row is removed; cloud uploads
+ * can request a failed row so the dashboard still reflects what happened. */
 export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const session = await auth.api.getSession({ headers: await headers() });
@@ -29,6 +30,18 @@ export async function POST(req: NextRequest, { params }: Params) {
     await abortMultipartUpload(objectKey(id, row.mimeType), body.uploadId).catch(
       () => {},
     );
+  }
+  if (body.markFailed === true) {
+    await db
+      .update(recording)
+      .set({
+        status: "failed",
+        sizeBytes: typeof body.sizeBytes === "number" ? body.sizeBytes : null,
+        durationSec:
+          typeof body.durationSec === "number" ? body.durationSec : null,
+      })
+      .where(eq(recording.id, id));
+    return NextResponse.json({ ok: true });
   }
   await db.delete(recording).where(eq(recording.id, id));
 

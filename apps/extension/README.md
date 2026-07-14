@@ -40,6 +40,9 @@ not ask for a capture mode separately; Chrome's picker is the source of truth.
 - **bubble.html / bubble.js** shows the live presenter-camera feed without an
   artificial delay, because the page-rendered bubble is captured as video while
   mic audio is captured separately in the offscreen recorder.
+- **shared-config.js** tries the production Capca app before localhost so local
+  dev servers cannot accidentally receive recordings meant for the user's real
+  dashboard.
 
 ## Known gaps
 

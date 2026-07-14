@@ -37,6 +37,9 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Fixed Capca Cloud plus local-copy recordings so production cloud upload is
+  attempted first, cloud failures preserve a failed dashboard row when possible,
+  and fallback local saves explain that the cloud upload failed.
 - [x] Fixed the remaining severe extension audio/video delay risk by removing
   the artificial presenter-camera delay, switching the bubble back to live
   video rendering, and preferring WebM/Opus recording before MP4.

@@ -711,7 +711,11 @@
         if (previousState === "uploading" && lastShareUrl) {
           toast("Link ready — opened in a new tab");
         } else if (previousState === "uploading" && savedLocally) {
-          toast("Not signed in to Capca — saved as download instead");
+          toast(
+            status.uploadNote ||
+              "Cloud upload did not finish — saved as download instead",
+            Boolean(status.uploadNote),
+          );
         }
         break;
     }

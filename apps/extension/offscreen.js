@@ -160,7 +160,10 @@ class CapcaUploader extends BaseUploader {
           this.errorMessage = data.message || "Capca Cloud storage is full.";
           return;
         }
-        if (!res.ok) continue;
+        if (!res.ok) {
+          this.errorMessage = `Capca Cloud could not create the recording (${base}: ${res.status}).`;
+          continue;
+        }
         const data = await res.json();
         this.base = base;
         this.id = data.id;
@@ -175,6 +178,8 @@ class CapcaUploader extends BaseUploader {
       }
     }
     this.failed = true; // signed out or offline: fall back to local
+    this.errorMessage ??=
+      "Capca Cloud upload could not start. Saved a local fallback instead.";
     console.warn("[capca] no API session — will fall back to local download");
   }
 
@@ -238,6 +243,8 @@ class CapcaUploader extends BaseUploader {
         return this.#uploadPart(blob, partNumber, attempt + 1);
       }
       console.error("[capca] part upload failed permanently:", err);
+      this.errorMessage =
+        "Capca Cloud upload failed while sending video data. Saved a local fallback instead.";
       this.failed = true;
     }
   }
@@ -274,6 +281,8 @@ class CapcaUploader extends BaseUploader {
         return { shareUrl: this.shareUrl };
       } catch (err) {
         console.error("[capca] complete failed:", err);
+        this.errorMessage =
+          "Capca Cloud upload could not be finalized. Saved a local fallback instead.";
         this.failed = true;
       }
     }
@@ -284,7 +293,12 @@ class CapcaUploader extends BaseUploader {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ uploadId: this.uploadId }),
+        body: JSON.stringify({
+          uploadId: this.uploadId,
+          markFailed: true,
+          sizeBytes: this.totalBytes,
+          durationSec,
+        }),
       }).catch(() => {});
     }
     if (!this.localDropped) {
