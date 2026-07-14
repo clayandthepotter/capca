@@ -40,7 +40,30 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  await completeMultipartUpload(objectKey(id, row.mimeType), uploadId, parts);
+  try {
+    await completeMultipartUpload(objectKey(id, row.mimeType), uploadId, parts);
+  } catch (err) {
+    const storageError = err as {
+      code?: unknown;
+      $metadata?: { httpStatusCode?: unknown };
+    };
+    console.error("[capca] multipart complete failed", {
+      recordingId: id,
+      partCount: parts.length,
+      error: err instanceof Error ? err.message : String(err),
+      name: err instanceof Error ? err.name : undefined,
+      code:
+        storageError.code === undefined ? undefined : String(storageError.code),
+      httpStatusCode: storageError.$metadata?.httpStatusCode,
+    });
+    return NextResponse.json(
+      {
+        error: "multipart_complete_failed",
+        message: "Capca Cloud storage could not finalize this recording.",
+      },
+      { status: 502 },
+    );
+  }
 
   await db
     .update(recording)

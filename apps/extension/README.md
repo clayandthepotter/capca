@@ -43,10 +43,14 @@ not ask for a capture mode separately; Chrome's picker is the source of truth.
 - **shared-config.js** tries the production Capca app before localhost so local
   dev servers cannot accidentally receive recordings meant for the user's real
   dashboard.
+- The launcher and fallback popup hydrate from a short-lived cached account
+  state before refreshing from the server, so reopening the extension does not
+  flash a signed-out/local-only state for signed-in users.
 
 ## Known gaps
 
-- Upload targets are hardcoded in `background.js` (`API_BASES`) — localhost
-  and capca-cam.vercel.app. A settings page for custom self-hosted domains is TODO.
+- Upload targets are hardcoded in `background.js` and `shared-config.js`
+  (`API_BASES`) — production first, localhost as a development fallback. A
+  settings page for custom self-hosted domains is TODO.
 - Picking the same tab you're on records the bubble (intended); picking a
   different window records that window but the bubble stays on the original tab.

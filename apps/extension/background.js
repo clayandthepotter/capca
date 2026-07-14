@@ -6,7 +6,9 @@
 // be rebuilt from storage + the offscreen document at any time.
 
 const STATUS_KEY = "capca:status";
-const API_BASES = ["http://localhost:3000", "https://capca-cam.vercel.app"];
+const ACCOUNT_CACHE_KEY = "capca:account-state";
+const ACCOUNT_CACHE_MAX_AGE_MS = 10 * 60 * 1000;
+const API_BASES = ["https://capca-cam.vercel.app", "http://localhost:3000"];
 
 // status: { phase: "idle"|"creating"|"recording"|"paused"|"uploading"|"error",
 //           startedAt?, pausedMs?, error?, shareUrl? }
@@ -124,6 +126,21 @@ async function openPopupFallback() {
   });
 }
 
+async function cacheAccountState(account) {
+  await chrome.storage.local
+    .set({ [ACCOUNT_CACHE_KEY]: { ...account, cachedAt: Date.now() } })
+    .catch(() => {});
+}
+
+async function cachedAccountState() {
+  const cached = (await chrome.storage.local.get(ACCOUNT_CACHE_KEY))[
+    ACCOUNT_CACHE_KEY
+  ];
+  if (!cached?.cachedAt) return null;
+  if (Date.now() - cached.cachedAt > ACCOUNT_CACHE_MAX_AGE_MS) return null;
+  return cached;
+}
+
 async function getAccountState() {
   let signedOutBase = null;
   for (const base of API_BASES) {
@@ -142,7 +159,7 @@ async function getAccountState() {
       let drive = { configured: false, connected: false };
       if (driveRes.ok) drive = await driveRes.json();
 
-      return {
+      const account = {
         ok: true,
         signedIn: true,
         apiBase: base,
@@ -152,11 +169,15 @@ async function getAccountState() {
         settings,
         drive,
       };
+      await cacheAccountState(account);
+      return account;
     } catch {
       // Try the next configured Capca host.
     }
   }
-  return {
+  const cached = await cachedAccountState();
+  if (cached?.signedIn) return { ...cached, stale: true };
+  const account = {
     ok: false,
     signedIn: false,
     apiBase: signedOutBase ?? API_BASES[0],
@@ -165,6 +186,8 @@ async function getAccountState() {
     settings: null,
     drive: { configured: false, connected: false },
   };
+  await cacheAccountState(account);
+  return account;
 }
 
 async function startRecording({

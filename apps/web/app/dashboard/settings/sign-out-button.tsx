@@ -12,6 +12,7 @@ export function SignOutButton({ compact = false }: { compact?: boolean }) {
     <button
       onClick={async () => {
         setBusy(true);
+        window.postMessage({ type: "capca:clear-account-cache" }, window.location.origin);
         await authClient.signOut();
         router.push("/");
         router.refresh();

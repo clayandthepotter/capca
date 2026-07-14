@@ -1,6 +1,6 @@
 # Todo
 
-Updated: 2026-07-13
+Updated: 2026-07-14
 
 ## In Progress
 
@@ -37,6 +37,12 @@ Updated: 2026-07-13
 
 ## Done
 
+- [x] Fixed Capca Cloud multipart completion failures by uploading fixed-size
+  non-final R2 parts instead of variable MediaRecorder chunk aggregates and
+  returning structured storage-finalization errors from the complete endpoint.
+- [x] Cached extension account state so reopening the launcher or fallback popup
+  can show the last known signed-in state immediately while the live server
+  refresh completes, and cleared that cache on app sign-out.
 - [x] Fixed Capca Cloud plus local-copy recordings so production cloud upload is
   attempted first, cloud failures preserve a failed dashboard row when possible,
   and fallback local saves explain that the cloud upload failed.

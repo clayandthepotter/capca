@@ -187,17 +187,34 @@ class CapcaUploader extends BaseUploader {
     this.#maybeFlush(false);
   }
 
-  #maybeFlush(isLast) {
-    if (!this.ready || this.failed) return;
-    if (!isLast && this.bufferBytes < PART_SIZE) return;
-    if (this.buffer.length === 0) return;
-    const part = new Blob(this.buffer, { type: this.mimeType });
-    this.buffer = [];
-    this.bufferBytes = 0;
+  #queuePart(blob) {
+    if (blob.size === 0) return;
     const partNumber = this.nextPartNumber++;
     this.pendingCount++;
-    this.queue.push({ blob: part, partNumber });
+    this.queue.push({ blob, partNumber });
     this.#pump();
+  }
+
+  #maybeFlush(isLast) {
+    if (!this.ready || this.failed) return;
+    if (this.buffer.length === 0) return;
+    const combined = new Blob(this.buffer, { type: this.mimeType });
+    this.buffer = [];
+    this.bufferBytes = 0;
+
+    let offset = 0;
+    while (combined.size - offset >= PART_SIZE) {
+      this.#queuePart(combined.slice(offset, offset + PART_SIZE, this.mimeType));
+      offset += PART_SIZE;
+    }
+
+    const remainder = combined.slice(offset, combined.size, this.mimeType);
+    if (isLast) {
+      this.#queuePart(remainder);
+    } else {
+      this.buffer = remainder.size > 0 ? [remainder] : [];
+      this.bufferBytes = remainder.size;
+    }
   }
 
   #pump() {
@@ -277,11 +294,15 @@ class CapcaUploader extends BaseUploader {
             }),
           },
         );
-        if (!res.ok) throw new Error(`complete: ${res.status}`);
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `complete: ${res.status}`);
+        }
         return { shareUrl: this.shareUrl };
       } catch (err) {
         console.error("[capca] complete failed:", err);
         this.errorMessage =
+          err?.message ||
           "Capca Cloud upload could not be finalized. Saved a local fallback instead.";
         this.failed = true;
       }

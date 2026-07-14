@@ -21,11 +21,18 @@
   let launcher = null;
   const UI_STATE_KEY = "capca:ui-state:v1";
   const SETTINGS_KEY = "capca:settings";
+  const ACCOUNT_CACHE_KEY = "capca:account-state";
   const DESTINATION_LABEL = {
     capca: "Capca Cloud",
     drive: "Google Drive",
     local: "This device",
   };
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.data?.type !== "capca:clear-account-cache") return;
+    chrome.storage.local.remove(ACCOUNT_CACHE_KEY).catch(() => {});
+  });
 
   async function readUiState() {
     try {
@@ -170,6 +177,24 @@
     let driveConfigured = false;
     let driveConnected = false;
     let lastUsage = null;
+
+    function applyAccount(account) {
+      signedIn = Boolean(account?.signedIn);
+      loginUrl = account?.loginUrl || loginUrl;
+      if (account?.ok) {
+        accountUser = account.user;
+        lastUsage = account.settings;
+        destination = account.settings?.defaultDestination || "capca";
+        driveConfigured = Boolean(account.drive?.configured);
+        driveConnected = Boolean(account.drive?.connected);
+      } else {
+        accountUser = null;
+        lastUsage = null;
+        destination = "local";
+        driveConfigured = false;
+        driveConnected = false;
+      }
+    }
 
     function formatGB(bytes) {
       return (bytes / (1024 * 1024 * 1024)).toFixed(1);
@@ -377,27 +402,17 @@
       launcher = null;
     });
 
-    void chrome.storage.local.get(SETTINGS_KEY).then((store) => {
+    void chrome.storage.local.get([SETTINGS_KEY, ACCOUNT_CACHE_KEY]).then((store) => {
       keepLocalPreference = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+      const cachedAccount = store[ACCOUNT_CACHE_KEY];
+      if (cachedAccount?.signedIn) applyAccount(cachedAccount);
       render();
     });
 
     void chrome.runtime
       .sendMessage({ type: "vc:get-account-state" })
       .then((account) => {
-        signedIn = Boolean(account?.signedIn);
-        loginUrl = account?.loginUrl || loginUrl;
-        if (account?.ok) {
-          accountUser = account.user;
-          lastUsage = account.settings;
-          destination = account.settings?.defaultDestination || "capca";
-          driveConfigured = Boolean(account.drive?.configured);
-          driveConnected = Boolean(account.drive?.connected);
-        } else {
-          destination = "local";
-          driveConfigured = false;
-          driveConnected = false;
-        }
+        applyAccount(account);
         render();
       })
       .catch(() => render());

@@ -22,6 +22,7 @@ const el = {
 };
 
 const SETTINGS_KEY = "capca:settings";
+const ACCOUNT_CACHE_KEY = "capca:account-state";
 const DESTINATION_LABEL = {
   capca: "Capca Cloud",
   drive: "Google Drive",
@@ -43,8 +44,10 @@ const accountLine = document.createElement("p");
 accountLine.className = "account-line";
 document.querySelector(".actions")?.before(accountLine);
 
-void chrome.storage.local.get(SETTINGS_KEY).then((store) => {
+void chrome.storage.local.get([SETTINGS_KEY, ACCOUNT_CACHE_KEY]).then((store) => {
   keepLocalPreference = Boolean(store[SETTINGS_KEY]?.keepLocalCopy);
+  const cachedAccount = store[ACCOUNT_CACHE_KEY];
+  if (cachedAccount?.signedIn) applyAccountState(cachedAccount);
   render();
 });
 
@@ -190,10 +193,7 @@ el.destination.addEventListener("change", () => {
 
 let lastUsage = null;
 
-async function loadAccountState() {
-  const account = await chrome.runtime
-    .sendMessage({ type: "vc:get-account-state" })
-    .catch(() => null);
+function applyAccountState(account) {
   signedIn = Boolean(account?.signedIn);
   loginUrl = account?.loginUrl || loginUrl;
   if (account?.ok) {
@@ -202,14 +202,22 @@ async function loadAccountState() {
     el.destination.value = account.settings?.defaultDestination || "capca";
     driveConfigured = Boolean(account.drive?.configured);
     driveConnected = Boolean(account.drive?.connected);
-    updateDestinationAvailability();
-    renderBadge(lastUsage);
-    render(currentStatus);
     return;
   }
+  accountUser = null;
+  lastUsage = null;
   el.destination.value = "local";
+  driveConfigured = false;
+  driveConnected = false;
+}
+
+async function loadAccountState() {
+  const account = await chrome.runtime
+    .sendMessage({ type: "vc:get-account-state" })
+    .catch(() => null);
+  applyAccountState(account);
   updateDestinationAvailability();
-  renderBadge(null);
+  renderBadge(lastUsage);
   render(currentStatus);
 }
 void loadAccountState();
